@@ -25,7 +25,6 @@ def get_db_connection():
         return None
 
 # Function to fetch data
-@st.cache_data(ttl=600) # Cache data for 10 minutes
 def fetch_data(query, connection):
     """Fetches data from the database and returns it as a Pandas DataFrame."""
     if connection is None:
