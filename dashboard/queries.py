@@ -1,16 +1,31 @@
-import sqlite3
+import psycopg2
 import pandas as pd
 import os
 
-# Database Path
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'fantasy_data.db')
+# --- START OF CHANGE ---
+# The DATABASE_URL will be provided by Render's environment.
+DATABASE_URL = os.environ.get('DATABASE_URL')
+# Local fallback for development, if needed.
+if not DATABASE_URL:
+    print("WARNING: DATABASE_URL not found. Falling back to local SQLite DB.")
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'fantasy_data.db')
+# --- END OF CHANGE ---
 
 def get_db_connection():
+    # --- START OF CHANGE ---
     try:
-        if not os.path.exists(DB_PATH): return None
-        conn = sqlite3.connect(DB_PATH)
-        return conn
-    except sqlite3.Error: return None
+        # Use Psycopg2 to connect to PostgreSQL if the URL is available
+        if DATABASE_URL:
+            return psycopg2.connect(DATABASE_URL)
+        # Fallback to SQLite for local development
+        else:
+            import sqlite3
+            if not os.path.exists(DB_PATH): return None
+            return sqlite3.connect(DB_PATH)
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        return None
+    # --- END OF CHANGE ---
 
 def find_true_champions(teams_df, matchups_df):
     champions = []
