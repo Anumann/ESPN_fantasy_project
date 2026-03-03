@@ -1,5 +1,69 @@
 import streamlit as st
+import pandas as pd
+import psycopg2
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
+# Set page config
+st.set_page_config(page_title="Fantasy Football Dashboard", layout="wide")
 
 st.title("Fantasy Football Dashboard")
 
-st.write("Application successfully deployed. Next step: connect to the database and build visualizations.")
+# Function to create a database connection
+@st.cache_resource
+def get_db_connection():
+    """Establishes a connection to the PostgreSQL database using secrets."""
+    try:
+        conn = psycopg2.connect(**st.secrets["database"])
+        logging.info("Database connection established successfully.")
+        return conn
+    except Exception as e:
+        st.error(f"Error connecting to the database: {e}")
+        logging.error(f"Database connection failed: {e}")
+        return None
+
+# Function to fetch data
+@st.cache_data(ttl=600) # Cache data for 10 minutes
+def fetch_data(query, connection):
+    """Fetches data from the database and returns it as a Pandas DataFrame."""
+    if connection is None:
+        return pd.DataFrame() # Return empty dataframe if no connection
+    try:
+        df = pd.read_sql(query, connection)
+        logging.info(f"Successfully executed query: {query}")
+        return df
+    except Exception as e:
+        st.error(f"Error executing query: {e}")
+        logging.error(f"Query execution failed: {e}")
+        return pd.DataFrame()
+
+# Main application logic
+def main():
+    """Main function to run the Streamlit app."""
+    conn = get_db_connection()
+
+    if conn:
+        st.subheader("League Managers")
+        
+        # Query to select all managers
+        managers_query = "SELECT * FROM managers ORDER BY manager_id;"
+        
+        # Fetch and display the data
+        managers_df = fetch_data(managers_query, conn)
+        
+        if not managers_df.empty:
+            st.dataframe(managers_df, use_container_width=True)
+        else:
+            st.warning("No manager data found or an error occurred during data fetching.")
+            
+        # You can add more sections here for other data
+        # For example:
+        # st.subheader("Team Information")
+        # teams_query = "SELECT * FROM teams;"
+        # teams_df = fetch_data(teams_query, conn)
+        # st.dataframe(teams_df, use_container_width=True)
+
+if __name__ == "__main__":
+    main()
