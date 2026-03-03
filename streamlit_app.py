@@ -44,18 +44,18 @@ def main():
     conn = get_db_connection()
 
     if conn:
-        st.subheader("League Managers")
+        st.subheader("Team Owners")
         
-        # Query to select all managers
-        managers_query = "SELECT * FROM managers ORDER BY manager_id;"
+        # Query to select all teams and owners
+        owners_query = "SELECT team_id, year, team_name, owner FROM teams ORDER BY owner;"
         
         # Fetch and display the data
-        managers_df = fetch_data(managers_query, conn)
+        owners_df = fetch_data(owners_query, conn)
         
-        if not managers_df.empty:
-            st.dataframe(managers_df, use_container_width=True)
+        if not owners_df.empty:
+            st.dataframe(owners_df, use_container_width=True)
         else:
-            st.warning("No manager data found or an error occurred during data fetching.")
+            st.warning("No team data found. The database may be empty. Please run the data extractor script.")
             
         # You can add more sections here for other data
         # For example:
