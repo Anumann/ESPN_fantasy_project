@@ -1,0 +1,19 @@
+/* styles.css */
+/* A simple dark theme to start */
+
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.header {
+    background-color: #1f1f1f;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #333;
+}
+
+.content {
+    padding: 20px;
+}

@@ -1,0 +1,15 @@
+# Example Configuration
+
+# Copy this file to config.py and fill in your actual values.
+# The config.py file is ignored by git (if initialized) to keep your credentials private.
+
+# Your league's ID. This can be found in the URL of your league's homepage.
+# e.g., for https://fantasy.espn.com/football/league/hub?leagueId=12345, the ID is 12345
+LEAGUE_ID = 12345
+
+# The year you want to fetch data for.
+YEAR = 2023
+
+# Your private league credentials. See AUTHENTICATION.md for instructions.
+ESPN_S2 = "YOUR_ESPN_S2_VALUE_HERE"
+SWID = "{YOUR_SWID_VALUE_HERE}"
