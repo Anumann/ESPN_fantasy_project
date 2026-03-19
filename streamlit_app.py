@@ -65,8 +65,12 @@ with tab1:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
+        # Convert problematic numeric columns to strings to enforce center alignment
+        champions_df['year'] = champions_df['year'].astype(str)
+        champions_df['points_for'] = champions_df['points_for'].astype(str)
+
         st.dataframe(
-            champions_df.style.format({"points_for": "{:.2f}"}),
+            champions_df,
             column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in champions_df.columns},
             hide_index=True, use_container_width=True
         )
