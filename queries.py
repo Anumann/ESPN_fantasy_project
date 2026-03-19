@@ -1,31 +1,25 @@
-import psycopg2
+import sqlite3
 import pandas as pd
 import os
 
-# --- START OF CHANGE ---
-# The DATABASE_URL will be provided by Render's environment.
-DATABASE_URL = os.environ.get('DATABASE_URL')
-# Local fallback for development, if needed.
-if not DATABASE_URL:
-    print("WARNING: DATABASE_URL not found. Falling back to local SQLite DB.")
-    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'fantasy_data.db')
-# --- END OF CHANGE ---
+DB_FILENAME = 'fantasy_data.db'
 
 def get_db_connection():
-    # --- START OF CHANGE ---
+    """Establishes a connection to the SQLite database."""
     try:
-        # Use Psycopg2 to connect to PostgreSQL if the URL is available
-        if DATABASE_URL:
-            return psycopg2.connect(DATABASE_URL)
-        # Fallback to SQLite for local development
-        else:
-            import sqlite3
-            if not os.path.exists(DB_PATH): return None
-            return sqlite3.connect(DB_PATH)
+        # The path is relative to the script's location.
+        # When run by Streamlit, the working directory is the project root.
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), DB_FILENAME)
+        if not os.path.exists(db_path):
+             # Fallback for local dev if the above path fails
+            db_path = DB_FILENAME
+            if not os.path.exists(db_path):
+                print(f"ERROR: Database file not found at {db_path}")
+                return None
+        return sqlite3.connect(db_path)
     except Exception as e:
         print(f"Database connection error: {e}")
         return None
-    # --- END OF CHANGE ---
 
 def find_true_champions(teams_df, matchups_df):
     champions = []
@@ -107,17 +101,15 @@ def get_league_champions():
     champs_list = find_true_champions(teams_df, matchups_df)
     if champs_list.empty: return pd.DataFrame(columns=['year', 'team_name', 'owner_name', 'record', 'points_for', 'runner_up', 'score'])
     
-    # Merge Champion details
     merged = pd.merge(champs_list, teams_df[['team_id', 'year', 'team_name', 'owner']], left_on=['year', 'champion_id'], right_on=['year', 'team_id'])
     merged = merged.rename(columns={'owner': 'owner_name'})
     
-    # Merge Runner-up details
     merged = pd.merge(merged, teams_df[['team_id', 'year', 'owner']], left_on=['year', 'runner_up_id'], right_on=['year', 'team_id'], suffixes=('', '_ru'))
     merged = merged.rename(columns={'owner': 'runner_up_name'})
     
     results = []
     for _, row in merged.iterrows():
-        team_id = row['champion_id'] # Use ID from champs_list
+        team_id = row['champion_id']
         year = row['year']
         season_games = matchups_df[(matchups_df['year'] == year) & (matchups_df['is_playoff'] == 0) & ((matchups_df['home_team_id'] == team_id) | (matchups_df['away_team_id'] == team_id))]
         wins = 0; losses = 0; ties = 0; pts = 0
@@ -250,14 +242,11 @@ def get_owner_profile(owner_name):
     matchups_df = pd.read_sql_query("SELECT * FROM matchups", conn)
     conn.close()
     
-    # --- START OF CHANGE ---
-    # Get a set of (year, champion_team_id) for easy lookup
     champs_df = find_true_champions(teams_df, matchups_df)
     if not champs_df.empty:
         champion_set = set(zip(champs_df['year'], champs_df['champion_id']))
     else:
         champion_set = set()
-    # --- END OF CHANGE ---
     
     teams_df.loc[teams_df['owner'] == 'Alex Guam', 'owner_id'] = '{0690C529-10A3-4648-B467-4B594AE11B8E}'
     my_teams = teams_df[teams_df['owner'] == owner_name]
@@ -279,10 +268,8 @@ def get_owner_profile(owner_name):
             elif s < o: l += 1
             else: t += 1
             
-        # --- START OF CHANGE ---
         is_champion = (year, team_id) in champion_set
         season_log.append({'year': year, 'team': team_name, 'record': f"{w}-{l}-{t}", 'points': pts, 'is_champion': is_champion})
-        # --- END OF CHANGE ---
         
         total_w += w; total_l += l; total_t += t; total_pts += pts
     all_games = []
