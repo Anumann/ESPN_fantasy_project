@@ -147,9 +147,12 @@ with tab3:
                 elif losses > wins: st.subheader(f"Record: {owner2} leads {losses}-{wins}-{ties}")
                 else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
+                h2h_display = h2h_df.copy()
+                h2h_display['outcome'] = h2h_display['outcome'].map({'WIN': owner1, 'LOSS': owner2, 'TIE': 'Tie'})
+                
                 st.dataframe(
-                    prepare_df_for_display(h2h_df),
-                    column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_df.columns},
+                    prepare_df_for_display(h2h_display),
+                    column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_display.columns},
                     hide_index=True, use_container_width=True
                 )
 
