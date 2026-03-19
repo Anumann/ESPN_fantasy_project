@@ -26,6 +26,7 @@ COLUMN_NAME_MAP = {
 # =================================================================================================
 # Data Fetching (with Caching)
 # =================================================================================================
+# Functions are cached to prevent re-fetching data on every interaction
 @st.cache_data
 def get_champions_cached():
     return queries.get_league_champions()
@@ -64,11 +65,10 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     st.header("League Champions")
     champions_df = get_champions_cached()
-    if champions_df.empty:
-        st.warning("No champion data found.")
-    else:
+    if not champions_df.empty:
         champions_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(champions_df.style.set_properties(**{'text-align': 'center'}),
+        st.dataframe(champions_df.style.format({"Points For": "{:.2f}"})
+                     .set_properties(**{'text-align': 'center'}),
                      hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -82,7 +82,8 @@ with tab2:
     if not reg_season_df.empty:
         reg_season_df = reg_season_df.drop(columns=['owner_id'], errors='ignore')
         reg_season_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(reg_season_df.style.set_properties(**{'text-align': 'center'}),
+        st.dataframe(reg_season_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"})
+                     .set_properties(**{'text-align': 'center'}),
                      hide_index=True, use_container_width=True)
 
     st.subheader("Playoffs")
@@ -90,7 +91,8 @@ with tab2:
     if not playoffs_df.empty:
         playoffs_df = playoffs_df.drop(columns=['owner_id'], errors='ignore')
         playoffs_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(playoffs_df.style.set_properties(**{'text-align': 'center'}),
+        st.dataframe(playoffs_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"})
+                     .set_properties(**{'text-align': 'center'}),
                      hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -123,7 +125,8 @@ with tab3:
                 else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
                 h2h_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(h2h_df.style.set_properties(**{'text-align': 'center'}),
+                st.dataframe(h2h_df.style.format({"Points": "{:.2f}", "Opp. Points": "{:.2f}"})
+                             .set_properties(**{'text-align': 'center'}),
                              hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -149,19 +152,22 @@ with tab4:
         
         all_play_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
         st.dataframe(all_play_df.style.apply(lambda x: x.map(style_luck), subset=['Luck Diff'])
-                     .format({'Luck Diff': '{:+.3f}'}).set_properties(**{'text-align': 'center'}),
+                     .format({'Real %': '{:.3f}', 'All-Play %': '{:.3f}', 'Luck Diff': '{:+.3f}'})
+                     .set_properties(**{'text-align': 'center'}),
                      hide_index=True, use_container_width=True)
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
             heartbreak_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(heartbreak_df.style.set_properties(**{'text-align': 'center'}),
+            st.dataframe(heartbreak_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"})
+                         .set_properties(**{'text-align': 'center'}),
                          hide_index=True, use_container_width=True)
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
             lucky_duck_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(lucky_duck_df.style.set_properties(**{'text-align': 'center'}),
+            st.dataframe(lucky_duck_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"})
+                         .set_properties(**{'text-align': 'center'}),
                          hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -183,7 +189,7 @@ with tab5:
             c1.metric("Wins", career_stats['wins'])
             c2.metric("Losses", career_stats['losses'])
             c3.metric("Win %", f"{career_stats['win_pct']:.3f}")
-            c4.metric("Total Points", f"{career_stats['points']:.0f}")
+            c4.metric("Total Points", f"{career_stats['points']:.2f}")
 
             season_log = profile_data['season_log'].copy()
             season_log['year'] = season_log.apply(
@@ -196,10 +202,12 @@ with tab5:
                 st.subheader("Season History")
                 season_log.rename(columns=COLUMN_NAME_MAP, inplace=True)
                 st.dataframe(season_log[['Year', 'Team', 'Record', 'Points']]
-                             .style.set_properties(**{'text-align': 'center'}),
+                             .style.format({"Points": "{:.2f}"})
+                             .set_properties(**{'text-align': 'center'}),
                              hide_index=True, use_container_width=True)
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
                 rivalries_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(rivalries_df.style.set_properties(**{'text-align': 'center'}),
+                st.dataframe(rivalries_df.style.format({"Win %": "{:.3f}"})
+                             .set_properties(**{'text-align': 'center'}),
                              hide_index=True, use_container_width=True)
