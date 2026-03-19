@@ -27,14 +27,21 @@ def prepare_df_for_display(df):
     """Converts numeric columns to formatted strings to enforce center alignment via column_config."""
     df_copy = df.copy()
     for col in df_copy.columns:
-        if col in ['win_pct', 'real_pct', 'ap_pct']:
-            df_copy[col] = df_copy[col].apply(lambda x: f"{float(x):.3f}" if pd.notnull(x) else "")
-        elif col == 'luck_diff':
-            df_copy[col] = df_copy[col].apply(lambda x: f"{float(x):+.3f}" if pd.notnull(x) else "")
-        elif col in ['avg_points', 'total_points', 'points', 'opponent_points', 'score', 'opp_score', 'points_for']:
-            df_copy[col] = df_copy[col].apply(lambda x: f"{float(x):.2f}" if pd.notnull(x) else "")
-        else:
-            df_copy[col] = df_copy[col].astype(str)
+        def safe_format(val, col_name):
+            if pd.isnull(val): return ""
+            try:
+                if col_name in ['win_pct', 'real_pct', 'ap_pct']:
+                    return f"{float(val):.3f}"
+                elif col_name == 'luck_diff':
+                    return f"{float(val):+.3f}"
+                elif col_name in ['avg_points', 'total_points', 'points', 'opponent_points', 'score', 'opp_score', 'points_for']:
+                    return f"{float(val):.2f}"
+                return str(val)
+            except (ValueError, TypeError):
+                # Safely catches strings like "120.50 - 110.20" or "10-2-1" and leaves them alone
+                return str(val)
+        
+        df_copy[col] = df_copy[col].apply(lambda x: safe_format(x, col))
     return df_copy
 
 # =================================================================================================
