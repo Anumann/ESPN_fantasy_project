@@ -19,12 +19,14 @@ COLUMN_NAME_MAP = {
     'record': 'Record',
     'runner_up': 'Runner-Up',
     'score': 'Final Score',
+    'points_for': 'Points For',
     'games_played': 'Games',
     'wins': 'W',
     'losses': 'L',
     'ties': 'T',
     'win_pct': 'Win %',
     'avg_points': 'Avg Pts',
+    'total_points': 'Total Pts',
     'week': 'Week',
     'points': 'Points',
     'opponent_points': 'Opp. Points',
@@ -37,6 +39,8 @@ COLUMN_NAME_MAP = {
     'ap_record': 'All-Play Record',
     'ap_pct': 'All-Play %',
     'luck_diff': 'Luck Diff',
+    'team': 'Team',
+    'total': 'Total Games',
 }
 
 def anonymize_name(name):
@@ -57,15 +61,6 @@ def format_df_names(df, column_names):
         if col in df_copy.columns:
             df_copy[col] = df_copy[col].apply(anonymize_name)
     return df_copy
-
-def style_and_display_df(df):
-    """Applies renaming, styling, and displays a Streamlit DataFrame."""
-    df = df.rename(columns=COLUMN_NAME_MAP)
-    st.dataframe(
-        df.style.set_properties(**{'text-align': 'center'}),
-        hide_index=True,
-        use_container_width=True
-    )
 
 # =================================================================================================
 # Data Fetching (with Caching)
@@ -115,7 +110,11 @@ with tab1:
         st.warning("No champion data found.")
     else:
         display_df = format_df_names(champions_df, ['owner_name', 'runner_up'])
-        style_and_display_df(display_df)
+        display_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
+        st.dataframe(
+            display_df.style.set_properties(**{'text-align': 'center'}),
+            hide_index=True, use_container_width=True
+        )
 
 # =================================================================================================
 # Tab 2: All-Time Records
@@ -128,14 +127,22 @@ with tab2:
     if not reg_season_df.empty:
         display_reg = format_df_names(reg_season_df, ['owner_name'])
         display_reg = display_reg.drop(columns=['owner_id'], errors='ignore')
-        style_and_display_df(display_reg)
+        display_reg.rename(columns=COLUMN_NAME_MAP, inplace=True)
+        st.dataframe(
+            display_reg.style.set_properties(**{'text-align': 'center'}),
+            hide_index=True, use_container_width=True
+        )
 
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
         display_playoffs = format_df_names(playoffs_df, ['owner_name'])
         display_playoffs = display_playoffs.drop(columns=['owner_id'], errors='ignore')
-        style_and_display_df(display_playoffs)
+        display_playoffs.rename(columns=COLUMN_NAME_MAP, inplace=True)
+        st.dataframe(
+            display_playoffs.style.set_properties(**{'text-align': 'center'}),
+            hide_index=True, use_container_width=True
+        )
 
 # =================================================================================================
 # Tab 3: Head-to-Head
@@ -175,7 +182,11 @@ with tab3:
                 else:
                     st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
-                style_and_display_df(h2h_df)
+                h2h_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
+                st.dataframe(
+                    h2h_df.style.set_properties(**{'text-align': 'center'}),
+                    hide_index=True, use_container_width=True
+                )
 
 # =================================================================================================
 # Tab 4: Luck Metrics
@@ -200,20 +211,27 @@ with tab4:
             elif val < -0.05: return 'color: #dc3545'
             return ''
         
-        all_play_renamed = all_play_df.rename(columns=COLUMN_NAME_MAP)
+        all_play_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
         st.dataframe(
-            all_play_renamed.style.apply(lambda x: x.map(style_luck), subset=['Luck Diff']).format({'Luck Diff': '{:+.3f}'}).set_properties(**{'text-align': 'center'}),
-            hide_index=True,
-            use_container_width=True
+            all_play_df.style.apply(lambda x: x.map(style_luck), subset=['Luck Diff']).format({'Luck Diff': '{:+.3f}'}).set_properties(**{'text-align': 'center'}),
+            hide_index=True, use_container_width=True
         )
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
-            style_and_display_df(heartbreak_df)
+            heartbreak_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
+            st.dataframe(
+                heartbreak_df.style.set_properties(**{'text-align': 'center'}),
+                hide_index=True, use_container_width=True
+            )
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
-            style_and_display_df(lucky_duck_df)
+            lucky_duck_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
+            st.dataframe(
+                lucky_duck_df.style.set_properties(**{'text-align': 'center'}),
+                hide_index=True, use_container_width=True
+            )
 
 # =================================================================================================
 # Tab 5: Manager Profiles
@@ -250,7 +268,15 @@ with tab5:
             scol1, scol2 = st.columns(2)
             with scol1:
                 st.subheader("Season History")
-                style_and_display_df(season_log[['year', 'team', 'record', 'points']])
+                season_log.rename(columns=COLUMN_NAME_MAP, inplace=True)
+                st.dataframe(
+                    season_log[['Year', 'Team', 'Record', 'Points']].style.set_properties(**{'text-align': 'center'}),
+                    hide_index=True, use_container_width=True
+                )
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
-                style_and_display_df(rivalries_df)
+                rivalries_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
+                st.dataframe(
+                    rivalries_df.style.set_properties(**{'text-align': 'center'}),
+                    hide_index=True, use_container_width=True
+                )
