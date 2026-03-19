@@ -10,7 +10,7 @@ st.set_page_config(layout="wide", page_title="Fantasy League Legacy")
 st.title("Fantasy League Legacy Dashboard")
 
 # =================================================================================================
-# Constants
+# Constants & Helpers
 # =================================================================================================
 COLUMN_NAME_MAP = {
     'year': 'Year', 'team_name': 'Team', 'owner_name': 'Owner', 'record': 'Record',
@@ -22,6 +22,20 @@ COLUMN_NAME_MAP = {
     'real_pct': 'Real %', 'ap_record': 'All-Play Record', 'ap_pct': 'All-Play %',
     'luck_diff': 'Luck Diff', 'team': 'Team', 'total': 'Total Games',
 }
+
+def prepare_df_for_display(df):
+    """Converts numeric columns to formatted strings to enforce center alignment via column_config."""
+    df_copy = df.copy()
+    for col in df_copy.columns:
+        if col in ['win_pct', 'real_pct', 'ap_pct']:
+            df_copy[col] = df_copy[col].apply(lambda x: f"{float(x):.3f}" if pd.notnull(x) else "")
+        elif col == 'luck_diff':
+            df_copy[col] = df_copy[col].apply(lambda x: f"{float(x):+.3f}" if pd.notnull(x) else "")
+        elif col in ['avg_points', 'total_points', 'points', 'opponent_points', 'score', 'opp_score', 'points_for']:
+            df_copy[col] = df_copy[col].apply(lambda x: f"{float(x):.2f}" if pd.notnull(x) else "")
+        else:
+            df_copy[col] = df_copy[col].astype(str)
+    return df_copy
 
 # =================================================================================================
 # Data Fetching (with Caching)
@@ -65,12 +79,8 @@ with tab1:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        # Convert problematic numeric columns to strings to enforce center alignment
-        champions_df['year'] = champions_df['year'].astype(str)
-        champions_df['points_for'] = champions_df['points_for'].apply(lambda x: f"{x:.2f}")
-
         st.dataframe(
-            champions_df,
+            prepare_df_for_display(champions_df),
             column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in champions_df.columns},
             hide_index=True, use_container_width=True
         )
@@ -86,7 +96,7 @@ with tab2:
     if not reg_season_df.empty:
         df = reg_season_df.drop(columns=['owner_id'], errors='ignore')
         st.dataframe(
-            df.style.format({"win_pct": "{:.3f}", "avg_points": "{:.2f}", "total_points": "{:.2f}"}),
+            prepare_df_for_display(df),
             column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in df.columns},
             hide_index=True, use_container_width=True
         )
@@ -96,7 +106,7 @@ with tab2:
     if not playoffs_df.empty:
         df = playoffs_df.drop(columns=['owner_id'], errors='ignore')
         st.dataframe(
-            df.style.format({"win_pct": "{:.3f}", "avg_points": "{:.2f}", "total_points": "{:.2f}"}),
+            prepare_df_for_display(df),
             column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in df.columns},
             hide_index=True, use_container_width=True
         )
@@ -131,7 +141,7 @@ with tab3:
                 else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
                 st.dataframe(
-                    h2h_df.style.format({"points": "{:.2f}", "opponent_points": "{:.2f}"}),
+                    prepare_df_for_display(h2h_df),
                     column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_df.columns},
                     hide_index=True, use_container_width=True
                 )
@@ -150,7 +160,7 @@ with tab4:
         st.subheader("All-Play vs. Real Records")
         all_play_df = metrics['all_play']
         st.dataframe(
-            all_play_df.style.format({'real_pct': '{:.3f}', 'ap_pct': '{:.3f}', 'luck_diff': '{:+.3f}'}),
+            prepare_df_for_display(all_play_df),
             column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in all_play_df.columns},
             hide_index=True, use_container_width=True
         )
@@ -160,7 +170,7 @@ with tab4:
             st.subheader("Heartbreak Index (Top Losses)")
             heartbreak_df = metrics['heartbreak']
             st.dataframe(
-                heartbreak_df.style.format({"score": "{:.2f}", "opp_score": "{:.2f}"}),
+                prepare_df_for_display(heartbreak_df),
                 column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in heartbreak_df.columns},
                 hide_index=True, use_container_width=True
             )
@@ -168,7 +178,7 @@ with tab4:
             st.subheader("Lucky Duck Index (Top Wins)")
             lucky_duck_df = metrics['lucky_duck']
             st.dataframe(
-                lucky_duck_df.style.format({"score": "{:.2f}", "opp_score": "{:.2f}"}),
+                prepare_df_for_display(lucky_duck_df),
                 column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in lucky_duck_df.columns},
                 hide_index=True, use_container_width=True
             )
@@ -205,14 +215,14 @@ with tab5:
                 st.subheader("Season History")
                 df_log = season_log[['year', 'team', 'record', 'points']]
                 st.dataframe(
-                    df_log.style.format({"points": "{:.2f}"}),
+                    prepare_df_for_display(df_log),
                     column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in df_log.columns},
                     hide_index=True, use_container_width=True
                 )
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
                 st.dataframe(
-                    rivalries_df.style.format({"win_pct": "{:.3f}"}),
+                    prepare_df_for_display(rivalries_df),
                     column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalries_df.columns},
                     hide_index=True, use_container_width=True
                 )
