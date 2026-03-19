@@ -10,6 +10,20 @@ st.set_page_config(layout="wide", page_title="Fantasy League Legacy")
 st.title("Fantasy League Legacy Dashboard")
 
 # =================================================================================================
+# Custom CSS Injection
+# =================================================================================================
+# This CSS is injected to enforce text alignment in dataframes, bypassing a known
+# issue with Streamlit's default Styler rendering.
+center_style = """
+<style>
+    .dataframe th, .dataframe td {
+        text-align: center;
+    }
+</style>
+"""
+st.markdown(center_style, unsafe_allow_html=True)
+
+# =================================================================================================
 # Constants
 # =================================================================================================
 COLUMN_NAME_MAP = {
@@ -26,7 +40,6 @@ COLUMN_NAME_MAP = {
 # =================================================================================================
 # Data Fetching (with Caching)
 # =================================================================================================
-# Functions are cached to prevent re-fetching data on every interaction
 @st.cache_data
 def get_champions_cached():
     return queries.get_league_champions()
@@ -67,8 +80,7 @@ with tab1:
     champions_df = get_champions_cached()
     if not champions_df.empty:
         champions_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(champions_df.style.format({"Points For": "{:.2f}"})
-                     .set_properties(**{'text-align': 'center'}),
+        st.dataframe(champions_df.style.format({"Points For": "{:.2f}"}),
                      hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -82,8 +94,7 @@ with tab2:
     if not reg_season_df.empty:
         reg_season_df = reg_season_df.drop(columns=['owner_id'], errors='ignore')
         reg_season_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(reg_season_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"})
-                     .set_properties(**{'text-align': 'center'}),
+        st.dataframe(reg_season_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"}),
                      hide_index=True, use_container_width=True)
 
     st.subheader("Playoffs")
@@ -91,8 +102,7 @@ with tab2:
     if not playoffs_df.empty:
         playoffs_df = playoffs_df.drop(columns=['owner_id'], errors='ignore')
         playoffs_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(playoffs_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"})
-                     .set_properties(**{'text-align': 'center'}),
+        st.dataframe(playoffs_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"}),
                      hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -125,8 +135,7 @@ with tab3:
                 else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
                 h2h_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(h2h_df.style.format({"Points": "{:.2f}", "Opp. Points": "{:.2f}"})
-                             .set_properties(**{'text-align': 'center'}),
+                st.dataframe(h2h_df.style.format({"Points": "{:.2f}", "Opp. Points": "{:.2f}"}),
                              hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -152,22 +161,19 @@ with tab4:
         
         all_play_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
         st.dataframe(all_play_df.style.apply(lambda x: x.map(style_luck), subset=['Luck Diff'])
-                     .format({'Real %': '{:.3f}', 'All-Play %': '{:.3f}', 'Luck Diff': '{:+.3f}'})
-                     .set_properties(**{'text-align': 'center'}),
+                     .format({'Real %': '{:.3f}', 'All-Play %': '{:.3f}', 'Luck Diff': '{:+.3f}'}),
                      hide_index=True, use_container_width=True)
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
             heartbreak_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(heartbreak_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"})
-                         .set_properties(**{'text-align': 'center'}),
+            st.dataframe(heartbreak_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"}),
                          hide_index=True, use_container_width=True)
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
             lucky_duck_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(lucky_duck_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"})
-                         .set_properties(**{'text-align': 'center'}),
+            st.dataframe(lucky_duck_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"}),
                          hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -202,12 +208,10 @@ with tab5:
                 st.subheader("Season History")
                 season_log.rename(columns=COLUMN_NAME_MAP, inplace=True)
                 st.dataframe(season_log[['Year', 'Team', 'Record', 'Points']]
-                             .style.format({"Points": "{:.2f}"})
-                             .set_properties(**{'text-align': 'center'}),
+                             .style.format({"Points": "{:.2f}"}),
                              hide_index=True, use_container_width=True)
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
                 rivalries_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(rivalries_df.style.format({"Win %": "{:.3f}"})
-                             .set_properties(**{'text-align': 'center'}),
+                st.dataframe(rivalries_df.style.format({"Win %": "{:.3f}"}),
                              hide_index=True, use_container_width=True)
