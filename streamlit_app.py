@@ -10,21 +10,7 @@ st.set_page_config(layout="wide", page_title="Fantasy League Legacy")
 st.title("Fantasy League Legacy Dashboard")
 
 # =================================================================================================
-# Custom CSS Injection
-# =================================================================================================
-# This CSS is injected to enforce text alignment in dataframes, bypassing a known
-# issue with Streamlit's default Styler rendering.
-center_style = """
-<style>
-    .dataframe th, .dataframe td {
-        text-align: center;
-    }
-</style>
-"""
-st.markdown(center_style, unsafe_allow_html=True)
-
-# =================================================================================================
-# Constants
+# Constants & Helper Functions
 # =================================================================================================
 COLUMN_NAME_MAP = {
     'year': 'Year', 'team_name': 'Team', 'owner_name': 'Owner', 'record': 'Record',
@@ -36,6 +22,24 @@ COLUMN_NAME_MAP = {
     'real_pct': 'Real %', 'ap_record': 'All-Play Record', 'ap_pct': 'All-Play %',
     'luck_diff': 'Luck Diff', 'team': 'Team', 'total': 'Total Games',
 }
+
+def create_column_config(df):
+    """Dynamically creates a column_config dictionary for st.dataframe."""
+    config = {}
+    for col in df.columns:
+        label = COLUMN_NAME_MAP.get(col, col)
+        props = {"content-align": "center"}
+        
+        # Define formats for specific floating point columns
+        if col in ['win_pct', 'real_pct', 'ap_pct']:
+            config[col] = st.column_config.NumberColumn(label=label, format="%.3f", props=props)
+        elif col == 'luck_diff':
+            config[col] = st.column_config.NumberColumn(label=label, format="%+.3f", props=props)
+        elif col in ['avg_points', 'total_points', 'points', 'opponent_points', 'score', 'opp_score', 'points_for']:
+             config[col] = st.column_config.NumberColumn(label=label, format="%.2f", props=props)
+        else:
+            config[col] = st.column_config.Column(label=label, props=props)
+    return config
 
 # =================================================================================================
 # Data Fetching (with Caching)
@@ -79,8 +83,7 @@ with tab1:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        champions_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(champions_df.style.format({"Points For": "{:.2f}"}),
+        st.dataframe(champions_df, column_config=create_column_config(champions_df),
                      hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -92,17 +95,15 @@ with tab2:
     st.subheader("Regular Season")
     reg_season_df = get_all_time_standings_cached('Regular Season')
     if not reg_season_df.empty:
-        reg_season_df = reg_season_df.drop(columns=['owner_id'], errors='ignore')
-        reg_season_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(reg_season_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"}),
+        df = reg_season_df.drop(columns=['owner_id'], errors='ignore')
+        st.dataframe(df, column_config=create_column_config(df),
                      hide_index=True, use_container_width=True)
 
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
-        playoffs_df = playoffs_df.drop(columns=['owner_id'], errors='ignore')
-        playoffs_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(playoffs_df.style.format({"Win %": "{:.3f}", "Avg Pts": "{:.2f}", "Total Pts": "{:.2f}"}),
+        df = playoffs_df.drop(columns=['owner_id'], errors='ignore')
+        st.dataframe(df, column_config=create_column_config(df),
                      hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -134,8 +135,7 @@ with tab3:
                 elif losses > wins: st.subheader(f"Record: {owner2} leads {losses}-{wins}-{ties}")
                 else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
-                h2h_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(h2h_df.style.format({"Points": "{:.2f}", "Opp. Points": "{:.2f}"}),
+                st.dataframe(h2h_df, column_config=create_column_config(h2h_df),
                              hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -151,29 +151,19 @@ with tab4:
     else:
         st.subheader("All-Play vs. Real Records")
         all_play_df = metrics['all_play']
-        heartbreak_df = metrics['heartbreak']
-        lucky_duck_df = metrics['lucky_duck']
-
-        def style_luck(val):
-            if val > 0.05: return 'color: #28a745'
-            elif val < -0.05: return 'color: #dc3545'
-            return ''
-        
-        all_play_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(all_play_df.style.apply(lambda x: x.map(style_luck), subset=['Luck Diff'])
-                     .format({'Real %': '{:.3f}', 'All-Play %': '{:.3f}', 'Luck Diff': '{:+.3f}'}),
+        st.dataframe(all_play_df, column_config=create_column_config(all_play_df),
                      hide_index=True, use_container_width=True)
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
-            heartbreak_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(heartbreak_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"}),
+            heartbreak_df = metrics['heartbreak']
+            st.dataframe(heartbreak_df, column_config=create_column_config(heartbreak_df),
                          hide_index=True, use_container_width=True)
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
-            lucky_duck_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(lucky_duck_df.style.format({"Score": "{:.2f}", "Opp. Score": "{:.2f}"}),
+            lucky_duck_df = metrics['lucky_duck']
+            st.dataframe(lucky_duck_df, column_config=create_column_config(lucky_duck_df),
                          hide_index=True, use_container_width=True)
 
 # =================================================================================================
@@ -206,12 +196,10 @@ with tab5:
             scol1, scol2 = st.columns(2)
             with scol1:
                 st.subheader("Season History")
-                season_log.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(season_log[['Year', 'Team', 'Record', 'Points']]
-                             .style.format({"Points": "{:.2f}"}),
+                df_log = season_log[['year', 'team', 'record', 'points']]
+                st.dataframe(df_log, column_config=create_column_config(df_log),
                              hide_index=True, use_container_width=True)
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
-                rivalries_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(rivalries_df.style.format({"Win %": "{:.3f}"}),
+                st.dataframe(rivalries_df, column_config=create_column_config(rivalries_df),
                              hide_index=True, use_container_width=True)
