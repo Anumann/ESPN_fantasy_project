@@ -67,7 +67,7 @@ with tab1:
     if not champions_df.empty:
         # Convert problematic numeric columns to strings to enforce center alignment
         champions_df['year'] = champions_df['year'].astype(str)
-        champions_df['points_for'] = champions_df['points_for'].astype(str)
+        champions_df['points_for'] = champions_df['points_for'].apply(lambda x: f"{x:.2f}")
 
         st.dataframe(
             champions_df,
