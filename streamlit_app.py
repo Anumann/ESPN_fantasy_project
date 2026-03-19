@@ -81,7 +81,7 @@ with tab1:
         st.warning("No champion data found.")
     else:
         display_df = format_df_names(champions_df, ['owner_name', 'runner_up'])
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        st.table(display_df)
 
 # =================================================================================================
 # Tab 2: All-Time Records
@@ -94,14 +94,14 @@ with tab2:
     if not reg_season_df.empty:
         display_reg = format_df_names(reg_season_df, ['owner_name'])
         display_reg = display_reg.drop(columns=['owner_id'], errors='ignore')
-        st.dataframe(display_reg, use_container_width=True, hide_index=True)
+        st.table(display_reg)
 
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
         display_playoffs = format_df_names(playoffs_df, ['owner_name'])
         display_playoffs = display_playoffs.drop(columns=['owner_id'], errors='ignore')
-        st.dataframe(display_playoffs, use_container_width=True, hide_index=True)
+        st.table(display_playoffs)
 
 # =================================================================================================
 # Tab 3: Head-to-Head
@@ -110,7 +110,6 @@ with tab3:
     st.header("Head-to-Head Analysis")
     owners = get_all_owners_cached()
     
-    # Create a mapping from anonymized name to original name
     name_map = {anonymize_name(name): name for name in owners}
     anonymized_owners = sorted(name_map.keys())
     
@@ -124,7 +123,6 @@ with tab3:
         if anon_owner1 == anon_owner2:
             st.warning("Please select two different owners.")
         else:
-            # Use map to get original names for the query
             original_owner1 = name_map[anon_owner1]
             original_owner2 = name_map[anon_owner2]
             
@@ -143,7 +141,7 @@ with tab3:
                 else:
                     st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
-                st.dataframe(h2h_df, use_container_width=True, hide_index=True)
+                st.table(h2h_df)
 
 # =================================================================================================
 # Tab 4: Luck Metrics
@@ -163,21 +161,15 @@ with tab4:
         heartbreak_df = format_df_names(metrics['heartbreak'], ['owner', 'opponent'])
         lucky_duck_df = format_df_names(metrics['lucky_duck'], ['owner', 'opponent'])
 
-        # Styler function for luck_diff
-        def style_luck(val):
-            if val > 0.05: return 'color: #28a745'
-            elif val < -0.05: return 'color: #dc3545'
-            return ''
-
-        st.dataframe(all_play_df.style.apply(lambda x: x.map(style_luck), subset=['luck_diff']).format({'luck_diff': '{:+.3f}'}), use_container_width=True, hide_index=True)
+        st.table(all_play_df)
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
-            st.dataframe(heartbreak_df, use_container_width=True, hide_index=True)
+            st.table(heartbreak_df)
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
-            st.dataframe(lucky_duck_df, use_container_width=True, hide_index=True)
+            st.table(lucky_duck_df)
 
 # =================================================================================================
 # Tab 5: Manager Profiles
@@ -214,7 +206,7 @@ with tab5:
             scol1, scol2 = st.columns(2)
             with scol1:
                 st.subheader("Season History")
-                st.dataframe(season_log[['year', 'team', 'record', 'points']], use_container_width=True, hide_index=True)
+                st.table(season_log[['year', 'team', 'record', 'points']])
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
-                st.dataframe(rivalries_df, use_container_width=True, hide_index=True)
+                st.table(rivalries_df)
