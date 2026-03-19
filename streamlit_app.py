@@ -13,11 +13,13 @@ st.title("Fantasy League Legacy Dashboard")
 # Helper Functions
 # =================================================================================================
 def anonymize_name(name):
-    """Capitalizes and converts a full name to 'Firstname L.' format for anonymity."""
-    if not isinstance(name, str) or ' ' not in name:
-        return str(name).title()
+    """Capitalizes and formats a full name to omit the last name."""
+    if not isinstance(name, str):
+        return str(name)
     parts = name.title().split()
-    return f"{parts[0]} {parts[-1][0]}."
+    if len(parts) > 1:
+        return ' '.join(parts[:-1])  # Return all but the last part
+    return name.title() # Return the original name, capitalized, if it's a single word
 
 def format_df_names(df, column_names):
     """Applies the anonymize_name function to specified columns of a DataFrame."""
