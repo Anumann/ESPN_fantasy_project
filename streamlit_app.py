@@ -10,7 +10,7 @@ st.set_page_config(layout="wide", page_title="Fantasy League Legacy")
 st.title("Fantasy League Legacy Dashboard")
 
 # =================================================================================================
-# Constants & Helper Functions
+# Constants
 # =================================================================================================
 COLUMN_NAME_MAP = {
     'year': 'Year', 'team_name': 'Team', 'owner_name': 'Owner', 'record': 'Record',
@@ -65,8 +65,11 @@ with tab1:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        champions_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(champions_df, hide_index=True, use_container_width=True)
+        column_config = {
+            col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+            for col in champions_df.columns
+        }
+        st.dataframe(champions_df, column_config=column_config, hide_index=True, use_container_width=True)
 
 # =================================================================================================
 # Tab 2: All-Time Records
@@ -78,15 +81,21 @@ with tab2:
     reg_season_df = get_all_time_standings_cached('Regular Season')
     if not reg_season_df.empty:
         df = reg_season_df.drop(columns=['owner_id'], errors='ignore')
-        df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(df, hide_index=True, use_container_width=True)
+        column_config = {
+            col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+            for col in df.columns
+        }
+        st.dataframe(df, column_config=column_config, hide_index=True, use_container_width=True)
 
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
         df = playoffs_df.drop(columns=['owner_id'], errors='ignore')
-        df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(df, hide_index=True, use_container_width=True)
+        column_config = {
+            col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+            for col in df.columns
+        }
+        st.dataframe(df, column_config=column_config, hide_index=True, use_container_width=True)
 
 # =================================================================================================
 # Tab 3: Head-to-Head
@@ -117,8 +126,11 @@ with tab3:
                 elif losses > wins: st.subheader(f"Record: {owner2} leads {losses}-{wins}-{ties}")
                 else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
                 
-                h2h_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(h2h_df, hide_index=True, use_container_width=True)
+                column_config = {
+                    col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+                    for col in h2h_df.columns
+                }
+                st.dataframe(h2h_df, column_config=column_config, hide_index=True, use_container_width=True)
 
 # =================================================================================================
 # Tab 4: Luck Metrics
@@ -133,20 +145,26 @@ with tab4:
     else:
         st.subheader("All-Play vs. Real Records")
         all_play_df = metrics['all_play']
-        all_play_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-        st.dataframe(all_play_.df, hide_index=True, use_container_width=True)
+        st.dataframe(all_play_df, column_config={
+                        col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+                        for col in all_play_df.columns
+                     }, hide_index=True, use_container_width=True)
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
             heartbreak_df = metrics['heartbreak']
-            heartbreak_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(heartbreak_df, hide_index=True, use_container_width=True)
+            st.dataframe(heartbreak_df, column_config={
+                            col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+                            for col in heartbreak_df.columns
+                         }, hide_index=True, use_container_width=True)
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
             lucky_duck_df = metrics['lucky_duck']
-            lucky_duck_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-            st.dataframe(lucky_duck_df, hide_index=True, use_container_width=True)
+            st.dataframe(lucky_duck_df, column_config={
+                            col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+                            for col in lucky_duck_df.columns
+                         }, hide_index=True, use_container_width=True)
 
 # =================================================================================================
 # Tab 5: Manager Profiles
@@ -179,9 +197,13 @@ with tab5:
             with scol1:
                 st.subheader("Season History")
                 df_log = season_log[['year', 'team', 'record', 'points']]
-                df_log.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(df_log, hide_index=True, use_container_width=True)
+                st.dataframe(df_log, column_config={
+                                col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+                                for col in df_log.columns
+                             }, hide_index=True, use_container_width=True)
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
-                rivalries_df.rename(columns=COLUMN_NAME_MAP, inplace=True)
-                st.dataframe(rivalries_df, hide_index=True, use_container_width=True)
+                st.dataframe(rivalries_df, column_config={
+                                col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"}
+                                for col in rivalries_df.columns
+                             }, hide_index=True, use_container_width=True)
