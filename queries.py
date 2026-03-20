@@ -548,4 +548,38 @@ def get_all_season_point_totals():
     conn.close()
     return df
 
+def get_trivia_categories():
+    conn = get_db_connection()
+    if not conn: return []
+    df = pd.read_sql_query("SELECT DISTINCT category FROM questions ORDER BY category", conn)
+    return df['category'].tolist()
+
+def get_random_trivia_question(category=None):
+    conn = get_db_connection()
+    if not conn: return None
+    
+    query = "SELECT question_id, question_text, category FROM questions"
+    params = []
+    if category and category != "All Categories":
+        query += " WHERE category = ?"
+        params.append(category)
+    
+    questions_df = pd.read_sql_query(query, conn, params=params)
+    if questions_df.empty:
+        return None
+    
+    random_question = questions_df.sample(n=1).iloc[0]
+    question_id = random_question['question_id']
+    
+    answers_df = pd.read_sql_query("SELECT answer_text, is_correct FROM answers WHERE question_id = ?", conn, params=(question_id,))
+    
+    conn.close()
+    
+    return {
+        "question_id": int(question_id),
+        "question_text": random_question['question_text'],
+        "category": random_question['category'],
+        "answers": answers_df.to_dict('records')
+    }
+
 
