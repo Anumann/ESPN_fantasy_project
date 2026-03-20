@@ -12,6 +12,14 @@ st.set_page_config(layout="wide", page_title="Fantasy League Legacy")
 st.title("Fantasy League Legacy Dashboard")
 
 # =================================================================================================
+# Session State Initialization
+# =================================================================================================
+if 'current_question' not in st.session_state:
+    st.session_state.current_question = None
+if 'shuffled_answers' not in st.session_state:
+    st.session_state.shuffled_answers = []
+
+# =================================================================================================
 # Constants & Helpers
 # =================================================================================================
 COLUMN_NAME_MAP = {
