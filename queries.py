@@ -261,22 +261,43 @@ def get_owner_profile(owner_name):
     season_log = []
     years = sorted(my_teams['year'].unique(), reverse=True)
     total_w = 0; total_l = 0; total_t = 0; total_pts = 0
+    
     for year in years:
+        # Calculate full season standings to get rank
+        teams_year = teams_df[teams_df['year'] == year]
+        reg_season_games = matchups_df[(matchups_df['year'] == year) & (matchups_df['is_playoff'] == 0)]
+        standings = {team_id: {'w': 0, 'l': 0, 't': 0, 'pf': 0} for team_id in teams_year['team_id']}
+        for _, game in reg_season_games.iterrows():
+            h_id, a_id, h_s, a_s = game['home_team_id'], game['away_team_id'], game['home_score'], game['away_score']
+            if h_id in standings: standings[h_id]['pf'] += h_s
+            if a_id in standings: standings[a_id]['pf'] += a_s
+            if h_s > a_s: 
+                if h_id in standings: standings[h_id]['w'] += 1
+                if a_id in standings: standings[a_id]['l'] += 1
+            elif a_s > h_s:
+                if a_id in standings: standings[a_id]['w'] += 1
+                if h_id in standings: standings[h_id]['l'] += 1
+            else:
+                if h_id in standings: standings[h_id]['t'] += 1
+                if a_id in standings: standings[a_id]['t'] += 1
+        
+        standings_df = pd.DataFrame.from_dict(standings, orient='index')
+        standings_df['win_pct'] = standings_df['w'] / (standings_df['w'] + standings_df['l'] + standings_df['t'])
+        standings_df = standings_df.sort_values(['win_pct', 'pf'], ascending=[False, False]).reset_index().rename(columns={'index': 'team_id'})
+        standings_df['rank'] = standings_df.index + 1
+        
         team_row = my_teams[my_teams['year'] == year].iloc[0]
         team_id = team_row['team_id']
         team_name = team_row['team_name']
-        games = matchups_df[(matchups_df['year'] == year) & (matchups_df['is_playoff'] == 0) & ((matchups_df['home_team_id'] == team_id) | (matchups_df['away_team_id'] == team_id))]
-        w = 0; l = 0; t = 0; pts = 0
-        for _, g in games.iterrows():
-            if g['home_team_id'] == team_id: s = g['home_score']; o = g['away_score']
-            else: s = g['away_score']; o = g['home_score']
-            pts += s
-            if s > o: w += 1
-            elif s < o: l += 1
-            else: t += 1
-            
+        
+        w = standings_df.loc[standings_df['team_id'] == team_id, 'w'].iloc[0]
+        l = standings_df.loc[standings_df['team_id'] == team_id, 'l'].iloc[0]
+        t = standings_df.loc[standings_df['team_id'] == team_id, 't'].iloc[0]
+        pts = standings_df.loc[standings_df['team_id'] == team_id, 'pf'].iloc[0]
+        rank = standings_df.loc[standings_df['team_id'] == team_id, 'rank'].iloc[0]
+
         is_champion = (year, team_id) in champion_set
-        season_log.append({'year': year, 'team': team_name, 'record': f"{w}-{l}-{t}", 'points': pts, 'is_champion': is_champion})
+        season_log.append({'year': year, 'team': team_name, 'record': f"{w}-{l}-{t}", 'points': pts, 'rank': rank, 'is_champion': is_champion})
         
         total_w += w; total_l += l; total_t += t; total_pts += pts
     

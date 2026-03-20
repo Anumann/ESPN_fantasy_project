@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 import queries
 
 # =================================================================================================
@@ -20,7 +21,7 @@ COLUMN_NAME_MAP = {
     'opponent_points': 'Opp. Points', 'outcome': 'Outcome', 'owner': 'Owner',
     'opponent': 'Opponent', 'opp_score': 'Opp. Score', 'real_record': 'Real Record',
     'real_pct': 'Real %', 'ap_record': 'All-Play Record', 'ap_pct': 'All-Play %',
-    'luck_diff': 'Luck Diff', 'team': 'Team', 'total': 'Total Games',
+    'luck_diff': 'Luck Diff', 'team': 'Team', 'total': 'Total Games', 'rank': 'Rank',
     'manager_1': 'Manager 1', 'manager_2': 'Manager 2',
 }
 
@@ -321,6 +322,32 @@ with tab7:
                     column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalries_df.columns},
                     hide_index=True, use_container_width=True
                 )
+            
+            st.subheader("Performance Charts")
+            
+            # Ensure year is treated as a discrete variable for charting
+            chart_df = season_log.copy()
+            chart_df['year'] = chart_df['year'].astype(str)
+
+            # Bar Chart for Points
+            points_chart = alt.Chart(chart_df).mark_bar().encode(
+                x=alt.X('year', title='Year', sort=None),
+                y=alt.Y('points', title='Total Points For'),
+                tooltip=['year', 'points', 'team']
+            ).properties(
+                title='Points Per Season'
+            )
+            st.altair_chart(points_chart, use_container_width=True)
+            
+            # Line Chart for Rank
+            rank_chart = alt.Chart(chart_df).mark_line(point=True).encode(
+                x=alt.X('year', title='Year', sort=None),
+                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True)),
+                tooltip=['year', 'rank', 'record']
+            ).properties(
+                title='Rank Per Season'
+            )
+            st.altair_chart(rank_chart, use_container_width=True)
 
 # =================================================================================================
 # Tab 8: Ties
