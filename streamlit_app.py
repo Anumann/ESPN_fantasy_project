@@ -400,35 +400,6 @@ with tab8:
     else:
         st.info("No tied matchups found.")
 
-# =================================================================================================
-# Tab 9: Trivia
-# =================================================================================================
-with tab9:
-    st.header("League History Trivia")
-
-    # Initialize session state variables
-    if 'current_question' not in st.session_state:
-        st.session_state.current_question = None
-    if 'shuffled_answers' not in st.session_state:
-        st.session_state.shuffled_answers = []
-    if 'answer_submitted' not in st.session_state:
-        st.session_state.answer_submitted = False
-
-    # UI for selecting category and getting a new question
-    trivia_categories = get_trivia_categories_cached()
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        selected_category = st.selectbox("Select a Category", options=trivia_categories, key='trivia_category_select')
-    with col2:
-        if st.button("New Question", use_container_width=True):
-            st.session_state.current_question = get_random_trivia_question(selected_category)
-            if st.session_state.current_question:
-                answers = st.session_state.current_question['answers']
-                # Shuffle answers but keep track of the correct one
-                random.shuffle(answers)
-                st.session_state.shuffled_answers = answers
-                st.session_state.answer_submitted = False
-
     st.divider()
 
     # Display the current question and answer options
@@ -437,32 +408,102 @@ with tab9:
         st.subheader(q_data['question_text'])
         st.caption(f"Category: {q_data['category']}")
 
-        # Create a form for the answers to prevent re-rendering on selection
         with st.form(key='trivia_form'):
-            # Only 4 choices will be displayed
-            answers_to_display = st.session_state.shuffled_answers[:4]
-            # Ensure the correct answer is always one of the choices
-            correct_answer_present = any(a['is_correct'] for a in answers_to_display)
-            if not correct_answer_present:
-                # Find correct answer and an incorrect one to swap
-                correct_answer = next(a for a in st.session_state.shuffled_answers if a['is_correct'])
-                answers_to_display[random.randint(0, 3)] = correct_answer
-                random.shuffle(answers_to_display)
-            
-            # Display radio buttons for answers
+            # Use the shuffled answers stored in the session state
+            answers_to_display = st.session_state.shuffled_answers
             user_choice = st.radio("Choose your answer:", [a['answer_text'] for a in answers_to_display], key='trivia_choices')
             
-            # Submit button
             submitted = st.form_submit_button("Submit Answer")
 
             if submitted:
                 st.session_state.answer_submitted = True
+                # Find the full dictionary for the user's chosen answer text
                 chosen_answer_obj = next((a for a in answers_to_display if a['answer_text'] == user_choice), None)
+                
                 if chosen_answer_obj and chosen_answer_obj['is_correct']:
                     st.success("Correct!")
                 else:
-                    correct_answer_text = next((a['answer_text'] for a in st.session_state.shuffled_answers if a['is_correct']), "N/A")
+                    # Find the correct answer text from the original, unshuffled list to display it
+                    correct_answer_text = next((a['answer_text'] for a in q_data['answers'] if a['is_correct']), "Error: Could not find correct answer.")
                     st.error(f"Incorrect. The correct answer was: **{correct_answer_text}**")
-
     else:
         st.info("Click 'New Question' to start playing!")
+
+# Helper function to prepare the trivia question and answers
+def setup_new_question(category):
+    question_data = get_random_trivia_question(category)
+    if not question_data:
+        st.session_state.current_question = None
+        st.session_state.shuffled_answers = []
+        return
+
+    st.session_state.current_question = question_data
+    
+    # Separate correct and incorrect answers
+    correct_answer = None
+    incorrect_answers = []
+    for ans in question_data['answers']:
+        if ans['is_correct']:
+            correct_answer = ans
+        else:
+            incorrect_answers.append(ans)
+
+    # Shuffle incorrect answers and select 3
+    random.shuffle(incorrect_answers)
+    display_answers = [correct_answer] + incorrect_answers[:3]
+    
+    # Shuffle the final list of 4
+    random.shuffle(display_answers)
+    
+    st.session_state.shuffled_answers = display_answers
+    st.session_state.answer_submitted = False
+
+# Update the main trivia tab logic to use the helper
+with tab9:
+    st.header("League History Trivia")
+
+    if 'current_question' not in st.session_state:
+        st.session_state.current_question = None
+    if 'shuffled_answers' not in st.session_state:
+        st.session_state.shuffled_answers = []
+
+    trivia_categories = get_trivia_categories_cached()
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        selected_category = st.selectbox("Select a Category", options=trivia_categories, key='trivia_category_select')
+    with col2:
+        if st.button("New Question", use_container_width=True):
+            setup_new_question(selected_category)
+
+    st.divider()
+
+    if st.session_state.current_question:
+        q_data = st.session_state.current_question
+        st.subheader(q_data['question_text'])
+        st.caption(f"Category: {q_data['category']}")
+
+        with st.form(key='trivia_form'):
+            answers_to_display = st.session_state.shuffled_answers
+            
+            # Guard against empty answer list
+            if not answers_to_display:
+                st.error("Could not load trivia question. Please try requesting a new one.")
+            else:
+                user_choice = st.radio("Choose your answer:", [a['answer_text'] for a in answers_to_display], index=None, key='trivia_choices')
+                
+                submitted = st.form_submit_button("Submit Answer")
+
+                if submitted:
+                    if user_choice is None:
+                        st.warning("Please select an answer.")
+                    else:
+                        chosen_answer_obj = next((a for a in answers_to_display if a['answer_text'] == user_choice), None)
+                        
+                        if chosen_answer_obj and chosen_answer_obj['is_correct']:
+                            st.success(f"**{user_choice}** is correct!")
+                        else:
+                            correct_answer_text = next((a['answer_text'] for a in q_data['answers'] if a['is_correct']), "Error")
+                            st.error(f"Incorrect. The correct answer was: **{correct_answer_text}**")
+    else:
+        st.info("Click 'New Question' to start playing!")
+
