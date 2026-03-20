@@ -320,3 +320,80 @@ def get_all_ties():
     df = pd.read_sql_query(query, conn)
     conn.close()
     return df
+
+def get_league_records():
+    conn = get_db_connection()
+    if not conn: return {}
+    
+    matchups_df = pd.read_sql_query("SELECT * FROM matchups", conn)
+    teams_df = pd.read_sql_query("SELECT * FROM teams", conn)
+    conn.close()
+
+    # Merge to get team/owner names
+    merged = matchups_df.merge(teams_df, left_on=['year', 'home_team_id'], right_on=['year', 'team_id'], suffixes=('', '_home'))
+    merged = merged.rename(columns={'owner': 'home_owner'})
+    merged = merged.merge(teams_df, left_on=['year', 'away_team_id'], right_on=['year', 'team_id'], suffixes=('', '_away'))
+    merged = merged.rename(columns={'owner': 'away_owner'})
+
+    # Calculate margins and totals
+    merged['margin'] = (merged['home_score'] - merged['away_score']).abs()
+    merged['total_score'] = merged['home_score'] + merged['away_score']
+
+    # Unpivot for individual high/low scores
+    scores_home = merged[['year', 'week', 'home_owner', 'home_score']].rename(columns={'home_owner': 'owner', 'home_score': 'score'})
+    scores_away = merged[['year', 'week', 'away_owner', 'away_score']].rename(columns={'away_owner': 'owner', 'away_score': 'score'})
+    all_scores = pd.concat([scores_home, scores_away]).dropna(subset=['score'])
+
+    # Find records
+    highest_score = all_scores.loc[all_scores['score'].idxmax()]
+    lowest_score = all_scores.loc[all_scores['score'].idxmin()]
+    biggest_blowout = merged.loc[merged['margin'].idxmax()]
+    closest_shave = merged.loc[merged['margin'][merged['margin'] > 0].idxmin()]
+    highest_scoring_matchup = merged.loc[merged['total_score'].idxmax()]
+    lowest_scoring_matchup = merged.loc[merged['total_score'].idxmin()]
+
+    # Format output
+    records = {
+        "Highest Score": {
+            "Year": int(highest_score['year']),
+            "Week": int(highest_score['week']),
+            "Manager": highest_score['owner'],
+            "Points": f"{highest_score['score']:.2f}"
+        },
+        "Lowest Score": {
+            "Year": int(lowest_score['year']),
+            "Week": int(lowest_score['week']),
+            "Manager": lowest_score['owner'],
+            "Points": f"{lowest_score['score']:.2f}"
+        },
+        "Biggest Blowout": {
+            "Year": int(biggest_blowout['year']),
+            "Week": int(biggest_blowout['week']),
+            "Matchup": f"{biggest_blowout['home_owner']} vs {biggest_blowout['away_owner']}",
+            "Score": f"{biggest_blowout['home_score']:.2f} - {biggest_blowout['away_score']:.2f}",
+            "Margin": f"{biggest_blowout['margin']:.2f}"
+        },
+        "Closest Shave": {
+            "Year": int(closest_shave['year']),
+            "Week": int(closest_shave['week']),
+            "Matchup": f"{closest_shave['home_owner']} vs {closest_shave['away_owner']}",
+            "Score": f"{closest_shave['home_score']:.2f} - {closest_shave['away_score']:.2f}",
+            "Margin": f"{closest_shave['margin']:.2f}"
+        },
+        "Highest Scoring Matchup": {
+            "Year": int(highest_scoring_matchup['year']),
+            "Week": int(highest_scoring_matchup['week']),
+            "Matchup": f"{highest_scoring_matchup['home_owner']} vs {highest_scoring_matchup['away_owner']}",
+            "Score": f"{highest_scoring_matchup['home_score']:.2f} - {highest_scoring_matchup['away_score']:.2f}",
+            "Total Points": f"{highest_scoring_matchup['total_score']:.2f}"
+        },
+        "Lowest Scoring Matchup": {
+            "Year": int(lowest_scoring_matchup['year']),
+            "Week": int(lowest_scoring_matchup['week']),
+            "Matchup": f"{lowest_scoring_matchup['home_owner']} vs {lowest_scoring_matchup['away_owner']}",
+            "Score": f"{lowest_scoring_matchup['home_score']:.2f} - {lowest_scoring_matchup['away_score']:.2f}",
+            "Total Points": f"{lowest_scoring_matchup['total_score']:.2f}"
+        }
+    }
+    return records
+

@@ -76,11 +76,15 @@ def get_owner_profile_cached(owner):
 def get_all_ties_cached():
     return queries.get_all_ties()
 
+@st.cache_data
+def get_league_records_cached():
+    return queries.get_league_records()
+
 # =================================================================================================
 # Navigation Tabs
 # =================================================================================================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "🏆 Champions", "📊 All-Time Records", "⚔️ Head-to-Head",
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "🏆 Champions", "📜 League Records", "📊 All-Time Records", "⚔️ Head-to-Head",
     "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties"
 ])
 
@@ -96,6 +100,43 @@ with tab1:
             column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in champions_df.columns},
             hide_index=True, use_container_width=True
         )
+
+# =================================================================================================
+# Tab 2: League Records
+# =================================================================================================
+with tab2:
+    st.header("All-Time League Records")
+    records = get_league_records_cached()
+    
+    if not records:
+        st.warning("Could not retrieve league records.")
+    else:
+        # Display in 3 columns
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.subheader("High Scores")
+            st.markdown(f"**Highest Score:** `{records['Highest Score']['Points']}`")
+            st.caption(f"{records['Highest Score']['Manager']} ({records['Highest Score']['Year']}, Week {records['Highest Score']['Week']})")
+
+            st.markdown(f"**Highest Scoring Matchup:** `{records['Highest Scoring Matchup']['Total Points']}`")
+            st.caption(f"{records['Highest Scoring Matchup']['Matchup']} ({records['Highest Scoring Matchup']['Year']}, Week {records['Highest Scoring Matchup']['Week']})")
+
+        with col2:
+            st.subheader("Low Scores")
+            st.markdown(f"**Lowest Score:** `{records['Lowest Score']['Points']}`")
+            st.caption(f"{records['Lowest Score']['Manager']} ({records['Lowest Score']['Year']}, Week {records['Lowest Score']['Week']})")
+            
+            st.markdown(f"**Lowest Scoring Matchup:** `{records['Lowest Scoring Matchup']['Total Points']}`")
+            st.caption(f"{records['Lowest Scoring Matchup']['Matchup']} ({records['Lowest Scoring Matchup']['Year']}, Week {records['Lowest Scoring Matchup']['Week']})")
+
+        with col3:
+            st.subheader("Margins of Victory")
+            st.markdown(f"**Biggest Blowout:** `{records['Biggest Blowout']['Margin']}`")
+            st.caption(f"{records['Biggest Blowout']['Matchup']} ({records['Biggest Blowout']['Year']}, Week {records['Biggest Blowout']['Week']})")
+
+            st.markdown(f"**Closest Shave:** `{records['Closest Shave']['Margin']}`")
+            st.caption(f"{records['Closest Shave']['Matchup']} ({records['Closest Shave']['Year']}, Week {records['Closest Shave']['Week']})")
 
 # =================================================================================================
 # Tab 2: All-Time Records
