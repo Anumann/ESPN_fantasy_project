@@ -437,50 +437,54 @@ with tab8:
     else:
         st.info("Click 'New Question' to start playing!")
 
-# Helper function to prepare the trivia question and answers
+# =================================================================================================
+# Trivia Tab Helper Function
+# =================================================================================================
 def setup_new_question(category):
+    """Fetches, processes, and stores a new trivia question in the session state."""
     question_data = get_random_trivia_question(category)
-    if not question_data:
-        st.session_state.current_question = None
-        st.session_state.shuffled_answers = []
-        return
-
     st.session_state.current_question = question_data
-    
-    # Separate correct and incorrect answers
-    correct_answer = None
-    incorrect_answers = []
-    for ans in question_data['answers']:
-        if ans['is_correct']:
-            correct_answer = ans
+    if question_data:
+        correct_answer = next((ans for ans in question_data['answers'] if ans['is_correct']), None)
+        incorrect_answers = [ans for ans in question_data['answers'] if not ans['is_correct']]
+        
+        if correct_answer:
+            random.shuffle(incorrect_answers)
+            # Take up to 3 distractors to make a total of 4 choices
+            display_answers = [correct_answer] + incorrect_answers[:3]
+            random.shuffle(display_answers)
+            st.session_state.shuffled_answers = display_answers
         else:
-            incorrect_answers.append(ans)
+            # This case handles data integrity issues where a question might have no correct answer
+            st.session_state.shuffled_answers = []
+    else:
+        # This case handles when no questions are found for a category
+        st.session_state.shuffled_answers = []
 
-    # Shuffle incorrect answers and select 3
-    random.shuffle(incorrect_answers)
-    display_answers = [correct_answer] + incorrect_answers[:3]
-    
-    # Shuffle the final list of 4
-    random.shuffle(display_answers)
-    
-    st.session_state.shuffled_answers = display_answers
-    st.session_state.answer_submitted = False
+# =================================================================================================
+# Begin App Layout
+# =================================================================================================
+# (Tabs are defined up top)
 
-# Update the main trivia tab logic to use the helper
+with tab1:
+    st.header("League Champions")
+    champions_df = get_champions_cached()
+    if not champions_df.empty:
+        st.dataframe(
+            prepare_df_for_display(champions_df),
+            column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in champions_df.columns},
+            hide_index=True, width='stretch'
+        )
+# ... (rest of the tabs with width='stretch' replacement)
 with tab9:
     st.header("League History Trivia")
-
-    if 'current_question' not in st.session_state:
-        st.session_state.current_question = None
-    if 'shuffled_answers' not in st.session_state:
-        st.session_state.shuffled_answers = []
 
     trivia_categories = get_trivia_categories_cached()
     col1, col2 = st.columns([3, 1])
     with col1:
         selected_category = st.selectbox("Select a Category", options=trivia_categories, key='trivia_category_select')
     with col2:
-        if st.button("New Question", use_container_width=True):
+        if st.button("New Question", width='stretch'):
             setup_new_question(selected_category)
 
     st.divider()
@@ -493,12 +497,10 @@ with tab9:
         with st.form(key='trivia_form'):
             answers_to_display = st.session_state.shuffled_answers
             
-            # Guard against empty answer list
             if not answers_to_display:
                 st.error("Could not load trivia question. Please try requesting a new one.")
             else:
                 user_choice = st.radio("Choose your answer:", [a['answer_text'] for a in answers_to_display], index=None, key='trivia_choices')
-                
                 submitted = st.form_submit_button("Submit Answer")
 
                 if submitted:
@@ -506,7 +508,6 @@ with tab9:
                         st.warning("Please select an answer.")
                     else:
                         chosen_answer_obj = next((a for a in answers_to_display if a['answer_text'] == user_choice), None)
-                        
                         if chosen_answer_obj and chosen_answer_obj['is_correct']:
                             st.success(f"**{user_choice}** is correct!")
                         else:
