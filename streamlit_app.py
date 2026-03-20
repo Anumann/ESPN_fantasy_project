@@ -351,12 +351,12 @@ with tab7:
             flame_accent = alt.Chart(chart_df).mark_text(
                 align='center',
                 baseline='middle',
-                fontSize=24,
-                dy=-15  # Adjust vertical position to be just above the bar
+                fontSize=30,
+                dy=15  # Adjust vertical position to overlap with the bar
             ).encode(
                 x=alt.X('year:N', sort=None),
                 y='points:Q',
-                text=alt.value('🔥')
+                text=alt.value('🔥🔥🔥')
             ).transform_filter(
                 'datum.points > 2000'
             )
