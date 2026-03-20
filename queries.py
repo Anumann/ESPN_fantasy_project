@@ -279,18 +279,42 @@ def get_owner_profile(owner_name):
         season_log.append({'year': year, 'team': team_name, 'record': f"{w}-{l}-{t}", 'points': pts, 'is_champion': is_champion})
         
         total_w += w; total_l += l; total_t += t; total_pts += pts
+    
+    rivalries_df = get_rivalry_matrix(owner_name, teams_df, matchups_df)
+
+    games_played = total_w + total_l + total_t
+    win_pct = total_w / games_played if games_played > 0 else 0.0
+    return {'career': {'wins': total_w, 'losses': total_l, 'ties': total_t, 'points': total_pts, 'win_pct': win_pct}, 'season_log': pd.DataFrame(season_log), 'rivalries': rivalries_df}
+
+def get_rivalry_matrix(owner_name, teams_df=None, matchups_df=None):
+    if teams_df is None or matchups_df is None:
+        conn = get_db_connection()
+        if not conn: return pd.DataFrame()
+        teams_df = pd.read_sql_query("SELECT * FROM teams", conn)
+        matchups_df = pd.read_sql_query("SELECT * FROM matchups", conn)
+        conn.close()
+
+    my_teams = teams_df[teams_df['owner'] == owner_name]
+    if my_teams.empty: return pd.DataFrame()
+
     all_games = []
-    for year in years:
-        team_id = my_teams[my_teams['year'] == year].iloc[0]['team_id']
+    for _, team_row in my_teams.iterrows():
+        year = team_row['year']
+        team_id = team_row['team_id']
+        
         games = matchups_df[(matchups_df['year'] == year) & ((matchups_df['home_team_id'] == team_id) | (matchups_df['away_team_id'] == team_id))]
         for _, g in games.iterrows():
-            if g['home_team_id'] == team_id: my_s = g['home_score']; opp_s = g['away_score']; opp_id = g['away_team_id']
-            else: my_s = g['away_score']; opp_s = g['home_score']; opp_id = g['home_team_id']
+            if g['home_team_id'] == team_id:
+                my_s, opp_s, opp_id = g['home_score'], g['away_score'], g['away_team_id']
+            else:
+                my_s, opp_s, opp_id = g['away_score'], g['home_score'], g['home_team_id']
+            
             opp_row = teams_df[(teams_df['year'] == year) & (teams_df['team_id'] == opp_id)]
             if not opp_row.empty:
                 opp_name = opp_row.iloc[0]['owner']
                 res = 'W' if my_s > opp_s else ('L' if my_s < opp_s else 'T')
                 all_games.append({'opponent': opp_name, 'result': res})
+
     rivals = pd.DataFrame(all_games)
     rivalry_stats = []
     if not rivals.empty:
@@ -300,13 +324,10 @@ def get_owner_profile(owner_name):
             losses = len(group[group['result'] == 'L'])
             ties = len(group[group['result'] == 'T'])
             total = wins + losses + ties
-            if total >= 3: 
-                rivalry_stats.append({'opponent': opp, 'record': f"{wins}-{losses}-{ties}", 'win_pct': wins/total, 'total': total})
-    if rivalry_stats: rivalries_df = pd.DataFrame(rivalry_stats).sort_values('win_pct', ascending=False)
-    else: rivalries_df = pd.DataFrame(columns=['opponent', 'record', 'win_pct', 'total'])
-    games_played = total_w + total_l + total_t
-    win_pct = total_w / games_played if games_played > 0 else 0.0
-    return {'career': {'wins': total_w, 'losses': total_l, 'ties': total_t, 'points': total_pts, 'win_pct': win_pct}, 'season_log': pd.DataFrame(season_log), 'rivalries': rivalries_df}
+            rivalry_stats.append({'opponent': opp, 'record': f"{wins}-{losses}-{ties}", 'win_pct': wins/total, 'total': total})
+
+    return pd.DataFrame(rivalry_stats).sort_values('total', ascending=False)
+
 
 def get_all_ties():
     conn = get_db_connection()

@@ -65,6 +65,10 @@ def get_h2h_cached(o1, o2):
     return queries.get_head_to_head(o1, o2)
 
 @st.cache_data
+def get_rivalry_matrix_cached(owner):
+    return queries.get_rivalry_matrix(owner)
+
+@st.cache_data
 def get_luck_metrics_cached():
     return queries.get_luck_metrics()
 
@@ -88,7 +92,7 @@ def get_league_awards_cached(year):
 # Navigation Tabs
 # =================================================================================================
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-    "🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Head-to-Head",
+    "🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Rivalries",
     "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties"
 ])
 
@@ -218,42 +222,24 @@ with tab4:
         )
 
 # =================================================================================================
-# Tab 5: Head-to-Head
+# Tab 5: Rivalries
 # =================================================================================================
 with tab5:
-    st.header("Head-to-Head Analysis")
+    st.header("Rivalry Matrix")
     owners = sorted(get_all_owners_cached())
     
-    col1, col2 = st.columns(2)
-    with col1:
-        owner1 = st.selectbox("Select Owner 1", options=owners, index=None, placeholder="Choose an owner", key='h2h_owner1')
-    with col2:
-        owner2 = st.selectbox("Select Owner 2", options=owners, index=None, placeholder="Choose an owner", key='h2h_owner2')
+    selected_owner = st.selectbox("Select a Manager to see their all-time record vs opponents:", options=owners, index=None, placeholder="Choose a manager", key='rivalry_owner_select')
 
-    if owner1 and owner2:
-        if owner1 == owner2:
-            st.warning("Please select two different owners.")
+    if selected_owner:
+        rivalry_df = get_rivalry_matrix_cached(selected_owner)
+        if rivalry_df.empty:
+            st.info(f"No match history found for {selected_owner}.")
         else:
-            h2h_df = get_h2h_cached(owner1, owner2)
-            if h2h_df.empty:
-                st.info(f"No match history found between {owner1} and {owner2}.")
-            else:
-                wins = len(h2h_df[h2h_df['outcome'] == 'WIN'])
-                losses = len(h2h_df[h2h_df['outcome'] == 'LOSS'])
-                ties = len(h2h_df[h2h_df['outcome'] == 'TIE'])
-                
-                if wins > losses: st.subheader(f"Record: {owner1} leads {wins}-{losses}-{ties}")
-                elif losses > wins: st.subheader(f"Record: {owner2} leads {losses}-{wins}-{ties}")
-                else: st.subheader(f"Record: Tied {wins}-{losses}-{ties}")
-                
-                h2h_display = h2h_df.copy()
-                h2h_display['outcome'] = h2h_display['outcome'].map({'WIN': owner1, 'LOSS': owner2, 'TIE': 'Tie'})
-                
-                st.dataframe(
-                    prepare_df_for_display(h2h_display),
-                    column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_display.columns},
-                    hide_index=True, use_container_width=True
-                )
+            st.dataframe(
+                prepare_df_for_display(rivalry_df),
+                column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalry_df.columns},
+                hide_index=True, use_container_width=True
+            )
 
 # =================================================================================================
 # Tab 6: Luck Metrics
