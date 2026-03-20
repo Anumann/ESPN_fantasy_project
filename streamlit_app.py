@@ -367,10 +367,9 @@ with tab7:
             st.altair_chart(final_points_chart, use_container_width=True)
             
             # Line Chart for Rank
-            max_rank = season_log['rank'].max()
             rank_chart = alt.Chart(chart_df).mark_line(point=True).encode(
                 x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
-                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True, domain=[max_rank, 1])),
+                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True, zero=False)),
                 tooltip=['year', 'rank', 'record']
             ).properties(
                 title='Rank Per Season'
