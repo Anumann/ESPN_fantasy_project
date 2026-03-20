@@ -569,7 +569,7 @@ def get_random_trivia_question(category=None):
         return None
     
     random_question = questions_df.sample(n=1).iloc[0]
-    question_id = random_question['question_id']
+    question_id = int(random_question['question_id'])
     
     answers_df = pd.read_sql_query("SELECT answer_text, is_correct FROM answers WHERE question_id = ?", conn, params=(question_id,))
     
