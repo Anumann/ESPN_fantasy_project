@@ -98,13 +98,13 @@ def setup_new_question(category):
 # =================================================================================================
 tabs = st.tabs(["🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Rivalries", "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties", "🧠 Trivia"])
 
-with tabs[0]: # Champions
+with tabs[0]:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        st.dataframe(prepare_df_for_display(champions_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in champions_df.columns}, hide_index=True)
+        st.dataframe(prepare_df_for_display(champions_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in champions_df.columns}, hide_index=True, width='stretch')
 
-with tabs[1]: # League Records
+with tabs[1]:
     st.header("All-Time League Records")
     records = get_league_records_cached()
     if records:
@@ -128,7 +128,7 @@ with tabs[1]: # League Records
             st.markdown(f"**Closest Shave:** `{records['Closest Shave']['Margin']}`")
             st.caption(f"{records['Closest Shave']['Matchup']} ({records['Closest Shave']['Year']}, Week {records['Closest Shave']['Week']})")
 
-with tabs[2]: # League Awards
+with tabs[2]:
     st.header("Seasonal League Awards")
     all_years = queries.get_all_years()
     selected_year = st.selectbox("Select a Season", options=all_years, key='awards_year_selector')
@@ -163,43 +163,44 @@ with tabs[2]: # League Awards
                 else:
                     st.info("No heartbreaking losses found for this season.")
 
-with tabs[3]: # All-Time Records
+with tabs[3]:
     st.header("All-Time Records")
     st.subheader("Regular Season")
     reg_season_df = get_all_time_standings_cached('Regular Season')
     if not reg_season_df.empty:
-        st.dataframe(prepare_df_for_display(reg_season_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in reg_season_df.columns}, hide_index=True)
+        st.dataframe(prepare_df_for_display(reg_season_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in reg_season_df.columns}, hide_index=True, width='stretch')
+    
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
-        st.dataframe(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in playoffs_df.columns}, hide_index=True)
+        st.dataframe(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in playoffs_df.columns}, hide_index=True, width='stretch')
 
-with tabs[4]: # Rivalries
+with tabs[4]:
     st.header("Rivalry Matrix")
     owners = sorted(get_all_owners_cached())
     selected_owner = st.selectbox("Select a Manager:", options=owners, index=None, placeholder="Choose a manager", key='rivalry_owner_select')
     if selected_owner:
         rivalry_df = get_rivalry_matrix_cached(selected_owner)
         if rivalry_df.empty: st.info(f"No match history found for {selected_owner}.")
-        else: st.dataframe(prepare_df_for_display(rivalry_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in rivalry_df.columns}, hide_index=True)
+        else: st.dataframe(prepare_df_for_display(rivalry_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalry_df.columns}, hide_index=True, width='stretch')
 
-with tabs[5]: # Luck Metrics
+with tabs[5]:
     st.header("Luck Metrics")
     st.info("Luck Diff = (Real Win % - All-Play Win %). A negative score means bad luck.")
     metrics = get_luck_metrics_cached()
     if not metrics: st.warning("Luck metrics could not be calculated.")
     else:
         st.subheader("All-Play vs. Real Records")
-        st.dataframe(prepare_df_for_display(metrics['all_play']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in metrics['all_play'].columns}, hide_index=True)
+        st.dataframe(prepare_df_for_display(metrics['all_play']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in metrics['all_play'].columns}, hide_index=True, width='stretch')
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
-            st.dataframe(prepare_df_for_display(metrics['heartbreak']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in metrics['heartbreak'].columns}, hide_index=True)
+            st.dataframe(prepare_df_for_display(metrics['heartbreak']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in metrics['heartbreak'].columns}, hide_index=True, width='stretch')
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
-            st.dataframe(prepare_df_for_display(metrics['lucky_duck']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in metrics['lucky_duck'].columns}, hide_index=True)
+            st.dataframe(prepare_df_for_display(metrics['lucky_duck']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in metrics['lucky_duck'].columns}, hide_index=True, width='stretch')
 
-with tabs[6]: # Manager Profiles
+with tabs[6]:
     st.header("Manager Profile")
     owners = sorted(get_all_owners_cached())
     selected_owner = st.selectbox("Select a Manager", options=owners, index=None, placeholder="Choose a manager", key='manager_select')
@@ -207,39 +208,104 @@ with tabs[6]: # Manager Profiles
         profile_data = get_owner_profile_cached(selected_owner)
         if not profile_data: st.warning(f"No profile data found for {selected_owner}.")
         else:
-            # ... (Full manager profile logic restored here) ...
+            career_stats = profile_data['career']
+            st.subheader(f"Career Stats for {selected_owner}")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Wins", career_stats['wins'])
+            c2.metric("Losses", career_stats['losses'])
+            c3.metric("Win %", f"{career_stats['win_pct']:.3f}")
+            c4.metric("Total Points", f"{career_stats['points']:.2f}")
 
-with tabs[7]: # Ties
+            season_log = profile_data['season_log'].copy()
+            season_log['year'] = season_log.apply(lambda row: f"{row['year']} 🏆" if row['is_champion'] else str(row['year']), axis=1)
+            rivalries_df = profile_data['rivalries']
+
+            scol1, scol2 = st.columns(2)
+            with scol1:
+                st.subheader("Season History")
+                df_log = season_log[['year', 'team', 'record', 'points']]
+                st.dataframe(prepare_df_for_display(df_log), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in df_log.columns}, hide_index=True, width='stretch')
+            with scol2:
+                st.subheader("Rivalry Matrix (Min. 3 Games)")
+                st.dataframe(prepare_df_for_display(rivalries_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalries_df.columns}, hide_index=True, width='stretch')
+
+            st.subheader("Performance Charts")
+            all_points_df = get_all_season_point_totals_cached()
+            min_points = all_points_df['total_points'].min()
+            max_points = all_points_df['total_points'].max()
+
+            chart_df = season_log.copy()
+            chart_df['year'] = chart_df['year'].astype(str)
+
+            points_chart_base = alt.Chart(chart_df).mark_bar().encode(
+                x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
+                y=alt.Y('points', title='Total Points For'),
+                color=alt.Color('points', title="Points", scale=alt.Scale(domain=[min_points, max_points], range=["#4393c3", "#d6604d"])),
+                tooltip=['year', 'points', 'team']
+            )
+
+            flame_accent = alt.Chart(chart_df).mark_text(
+                align='center',
+                baseline='middle',
+                fontSize=30,
+                dy=15
+            ).encode(
+                x=alt.X('year:N', sort=None),
+                y='points:Q',
+                text=alt.value('🔥🔥🔥')
+            ).transform_filter('datum.points > 2000')
+
+            final_points_chart = (points_chart_base + flame_accent).properties(title='Points Per Season')
+            st.altair_chart(final_points_chart, width='stretch')
+
+            rank_chart = alt.Chart(chart_df).mark_line(point=True).encode(
+                x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
+                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True, zero=False)),
+                tooltip=['year', 'rank', 'record']
+            ).properties(title='Rank Per Season')
+            st.altair_chart(rank_chart, width='stretch')
+
+with tabs[7]:
     st.header("Tied Matchups")
     ties_df = get_all_ties_cached()
-    if not ties_df.empty: st.dataframe(prepare_df_for_display(ties_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in ties_df.columns}, hide_index=True)
-    else: st.info("No tied matchups found.")
+    if not ties_df.empty:
+        st.dataframe(prepare_df_for_display(ties_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in ties_df.columns}, hide_index=True, width='stretch')
+    else:
+        st.info("No tied matchups found.")
 
-with tabs[8]: # Trivia
+with tabs[8]:
     st.header("League History Trivia")
     trivia_categories = get_trivia_categories_cached()
     col1, col2 = st.columns([3, 1])
     with col1:
         selected_category = st.selectbox("Select a Category", options=trivia_categories)
     with col2:
-        if st.button("New Question"):
+        if st.button("New Question", width='stretch'):
             setup_new_question(selected_category)
     st.divider()
+
     if st.session_state.current_question:
         q_data = st.session_state.current_question
         st.subheader(q_data['question_text'])
         st.caption(f"Category: {q_data['category']}")
+
         with st.form(key='trivia_form'):
             answers_to_display = st.session_state.shuffled_answers
             if not answers_to_display:
                 st.error("Could not load trivia question. Please try requesting a new one.")
-                st.form_submit_button("Submit", disabled=True)
+                st.form_submit_button("Submit Answer", disabled=True)
             else:
                 user_choice = st.radio("Choose your answer:", [a['answer_text'] for a in answers_to_display], index=None)
-                submitted = st.form_submit_button("Submit")
+                submitted = st.form_submit_button("Submit Answer")
                 if submitted:
-                    if user_choice is None: st.warning("Please select an answer.")
+                    if user_choice is None:
+                        st.warning("Please select an answer.")
                     else:
-                        # ... (Trivia answer checking logic restored) ...
+                        chosen_obj = next((a for a in answers_to_display if a['answer_text'] == user_choice), None)
+                        correct_text = next((a['answer_text'] for a in q_data['answers'] if a['is_correct']), "Error")
+                        if chosen_obj and chosen_obj['is_correct']:
+                            st.success(f"**{user_choice}** is correct!")
+                        else:
+                            st.error(f"Incorrect. The correct answer was: **{correct_text}**")
     else:
         st.info("Click 'New Question' to start playing!")
