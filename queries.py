@@ -530,3 +530,22 @@ def get_league_awards(year_to_filter):
         "The Underdog": underdog_award
     }
 
+def get_all_season_point_totals():
+    conn = get_db_connection()
+    if not conn: return pd.DataFrame()
+    
+    query = """
+        SELECT
+            t.owner,
+            m.year,
+            SUM(CASE WHEN m.home_team_id = t.team_id THEN m.home_score ELSE m.away_score END) as total_points
+        FROM matchups m
+        JOIN teams t ON (m.year = t.year AND (m.home_team_id = t.team_id OR m.away_team_id = t.team_id))
+        WHERE m.is_playoff = 0
+        GROUP BY t.owner, m.year
+    """
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
+

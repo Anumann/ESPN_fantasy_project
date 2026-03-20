@@ -89,6 +89,10 @@ def get_league_records_cached():
 def get_league_awards_cached(year):
     return queries.get_league_awards(year)
 
+@st.cache_data
+def get_all_season_point_totals_cached():
+    return queries.get_all_season_point_totals()
+
 # =================================================================================================
 # Navigation Tabs
 # =================================================================================================
@@ -325,14 +329,22 @@ with tab7:
             
             st.subheader("Performance Charts")
             
-            # Ensure year is treated as a discrete variable for charting
+            # Get global point distribution for color scale
+            all_points_df = get_all_season_point_totals_cached()
+            min_points = all_points_df['total_points'].min()
+            max_points = all_points_df['total_points'].max()
+
             chart_df = season_log.copy()
             chart_df['year'] = chart_df['year'].astype(str)
 
             # Bar Chart for Points
             points_chart = alt.Chart(chart_df).mark_bar().encode(
-                x=alt.X('year', title='Year', sort=None),
+                x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
                 y=alt.Y('points', title='Total Points For'),
+                color=alt.Color('points', title="Points", scale=alt.Scale(
+                    domain=[min_points, max_points],
+                    range=["#d6604d", "#f7f7f7", "#4393c3"] # Red-White-Blue gradient
+                )),
                 tooltip=['year', 'points', 'team']
             ).properties(
                 title='Points Per Season'
@@ -340,9 +352,10 @@ with tab7:
             st.altair_chart(points_chart, use_container_width=True)
             
             # Line Chart for Rank
+            max_rank = season_log['rank'].max()
             rank_chart = alt.Chart(chart_df).mark_line(point=True).encode(
-                x=alt.X('year', title='Year', sort=None),
-                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True)),
+                x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
+                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True, domain=[max_rank + 1, 1])),
                 tooltip=['year', 'rank', 'record']
             ).properties(
                 title='Rank Per Season'
