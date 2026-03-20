@@ -167,7 +167,7 @@ with tab3:
                 else:
                     st.info("Award not calculated.")
 
-                st.subheader("🔪 Giant Killer")
+                st.subheader("🔪 Boston Scott Giant Killer Award")
                 giant_killer = awards.get("Giant Killer", {})
                 if giant_killer:
                     st.metric(label=f"{giant_killer['Manager']} ({giant_killer['Team']})", value=giant_killer['Winning Score'], help=f"Lowest score to win a matchup (Week {giant_killer['Week']}).")
