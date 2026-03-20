@@ -343,7 +343,7 @@ with tab7:
                 y=alt.Y('points', title='Total Points For'),
                 color=alt.Color('points', title="Points", scale=alt.Scale(
                     domain=[min_points, max_points],
-                    range=["#d6604d", "#f7f7f7", "#4393c3"] # Red-White-Blue gradient
+                    range=["#4393c3", "#d6604d"] # Blue-to-Red gradient
                 )),
                 tooltip=['year', 'points', 'team']
             ).properties(
