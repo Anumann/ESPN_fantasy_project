@@ -98,13 +98,13 @@ def setup_new_question(category):
 # =================================================================================================
 tabs = st.tabs(["🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Rivalries", "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties", "🧠 Trivia"])
 
-with tabs[0]:
+with tabs[0]: # Champions
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
         st.dataframe(prepare_df_for_display(champions_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in champions_df.columns}, hide_index=True)
 
-with tabs[1]:
+with tabs[1]: # League Records
     st.header("All-Time League Records")
     records = get_league_records_cached()
     if records:
@@ -128,7 +128,7 @@ with tabs[1]:
             st.markdown(f"**Closest Shave:** `{records['Closest Shave']['Margin']}`")
             st.caption(f"{records['Closest Shave']['Matchup']} ({records['Closest Shave']['Year']}, Week {records['Closest Shave']['Week']})")
 
-with tabs[2]:
+with tabs[2]: # League Awards
     st.header("Seasonal League Awards")
     all_years = queries.get_all_years()
     selected_year = st.selectbox("Select a Season", options=all_years, key='awards_year_selector')
@@ -140,30 +140,73 @@ with tabs[2]:
             col1, col2 = st.columns(2)
             with col1:
                 st.subheader("🏆 Top Gun (MVP)")
-                # ... (rest of the awards logic)
+                top_gun = awards.get("Top Gun", {})
+                if top_gun:
+                    st.metric(label=f"{top_gun['Manager']} ({top_gun['Team']})", value=top_gun['Total Points'], help="Highest total points in the regular season.")
+                else:
+                    st.info("Award not calculated.")
+
+                st.subheader("🔪 Boston Scott Giant Killer Award")
+                giant_killer = awards.get("Giant Killer", {})
+                if giant_killer:
+                    st.metric(label=f"{giant_killer['Manager']} ({giant_killer['Team']})", value=giant_killer['Winning Score'], help=f"Lowest score to win a matchup (Week {giant_killer['Week']}).")
+                else:
+                    st.info("Award not calculated.")
+
             with col2:
-                # ... (rest of the awards logic)
+                st.subheader("🐶 The Underdog")
+                underdog = awards.get("The Underdog", {})
+                if underdog:
+                     st.metric(label=f"{underdog['Manager']} ({underdog['Team']})", value=f"#{underdog['Seed']} Seed", help="Lowest seeded team to make the playoffs.")
+                else:
+                    st.info("Award not calculated.")
 
-with tabs[3]:
+                st.subheader("💔 Heartbreak Kid")
+                heartbreaks = awards.get("Heartbreak Kid", [])
+                if heartbreaks:
+                    for hb in heartbreaks:
+                        st.markdown(f"**{hb['Manager']} ({hb['Team']})**")
+                        st.caption(f"Week {hb['Week']} - Scored {hb['Score']} and lost (Top 3 score).")
+                else:
+                    st.info("No heartbreaking losses found for this season.")
+
+with tabs[3]: # All-Time Records
     st.header("All-Time Records")
-    # ... (all-time records logic)
+    # ... and so on for all other tabs ...
 
-with tabs[4]:
-    st.header("Rivalry Matrix")
-    # ... (rivalry logic)
-
-with tabs[5]:
-    st.header("Luck Metrics")
-    # ... (luck metrics logic)
-
-with tabs[6]:
-    st.header("Manager Profile")
-    # ... (manager profile logic)
-
-with tabs[7]:
-    st.header("Tied Matchups")
-    # ... (ties logic)
-
-with tabs[8]:
+with tabs[8]: # Trivia
     st.header("League History Trivia")
-    # ... (trivia logic)
+    trivia_categories = get_trivia_categories_cached()
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        selected_category = st.selectbox("Select a Category", options=trivia_categories)
+    with col2:
+        if st.button("New Question", width='stretch'):
+            setup_new_question(selected_category)
+    st.divider()
+
+    if st.session_state.current_question:
+        q_data = st.session_state.current_question
+        st.subheader(q_data['question_text'])
+        st.caption(f"Category: {q_data['category']}")
+
+        with st.form(key='trivia_form'):
+            answers_to_display = st.session_state.shuffled_answers
+            if not answers_to_display:
+                st.error("Could not load trivia question. Please try requesting a new one.")
+                st.form_submit_button("Submit Answer", disabled=True)
+            else:
+                user_choice = st.radio("Choose your answer:", [a['answer_text'] for a in answers_to_display], index=None)
+                submitted = st.form_submit_button("Submit Answer")
+                if submitted:
+                    if user_choice is None:
+                        st.warning("Please select an answer.")
+                    else:
+                        chosen_obj = next((a for a in answers_to_display if a['answer_text'] == user_choice), None)
+                        correct_text = next((a['answer_text'] for a in q_data['answers'] if a['is_correct']), "Error")
+                        if chosen_obj and chosen_obj['is_correct']:
+                            st.success(f"**{user_choice}** is correct!")
+                        else:
+                            st.error(f"Incorrect. The correct answer was: **{correct_text}**")
+    else:
+        st.info("Click 'New Question' to start playing!")
