@@ -139,9 +139,9 @@ with tab2:
             st.caption(f"{records['Closest Shave']['Matchup']} ({records['Closest Shave']['Year']}, Week {records['Closest Shave']['Week']})")
 
 # =================================================================================================
-# Tab 2: All-Time Records
+# Tab 3: All-Time Records
 # =================================================================================================
-with tab2:
+with tab3:
     st.header("All-Time Records")
     
     st.subheader("Regular Season")
@@ -165,9 +165,9 @@ with tab2:
         )
 
 # =================================================================================================
-# Tab 3: Head-to-Head
+# Tab 4: Head-to-Head
 # =================================================================================================
-with tab3:
+with tab4:
     st.header("Head-to-Head Analysis")
     owners = sorted(get_all_owners_cached())
     
@@ -203,9 +203,9 @@ with tab3:
                 )
 
 # =================================================================================================
-# Tab 4: Luck Metrics
+# Tab 5: Luck Metrics
 # =================================================================================================
-with tab4:
+with tab5:
     st.header("Luck Metrics")
     st.info("Luck Diff = (Real Win % - All-Play Win %). A negative score means bad luck.")
     
@@ -240,9 +240,9 @@ with tab4:
             )
 
 # =================================================================================================
-# Tab 5: Manager Profiles
+# Tab 6: Manager Profiles
 # =================================================================================================
-with tab5:
+with tab6:
     st.header("Manager Profile")
     owners = sorted(get_all_owners_cached())
     selected_owner = st.selectbox("Select a Manager", options=owners, index=None, placeholder="Choose a manager")
@@ -284,9 +284,9 @@ with tab5:
                 )
 
 # =================================================================================================
-# Tab 6: Ties
+# Tab 7: Ties
 # =================================================================================================
-with tab6:
+with tab7:
     st.header("Tied Matchups")
     ties_df = get_all_ties_cached()
     if not ties_df.empty:
