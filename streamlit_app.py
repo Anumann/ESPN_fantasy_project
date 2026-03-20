@@ -131,36 +131,39 @@ with tabs[1]:
 with tabs[2]:
     st.header("Seasonal League Awards")
     all_years = queries.get_all_years()
-    selected_year = st.selectbox("Select a Season", options=all_years)
+    selected_year = st.selectbox("Select a Season", options=all_years, key='awards_year_selector')
     if selected_year:
         awards = get_league_awards_cached(selected_year)
         if not awards or not any(awards.values()):
             st.warning(f"Could not retrieve or calculate awards for {selected_year}.")
         else:
-            # ... (awards display logic) ...
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("🏆 Top Gun (MVP)")
+                # ... (rest of the awards logic)
+            with col2:
+                # ... (rest of the awards logic)
 
 with tabs[3]:
     st.header("All-Time Records")
-    # ... (all-time records display logic) ...
+    # ... (all-time records logic)
 
 with tabs[4]:
     st.header("Rivalry Matrix")
-    # ... (rivalry display logic) ...
+    # ... (rivalry logic)
 
 with tabs[5]:
     st.header("Luck Metrics")
-    # ... (luck metrics display logic) ...
+    # ... (luck metrics logic)
 
 with tabs[6]:
     st.header("Manager Profile")
-    # ... (manager profile display logic) ...
+    # ... (manager profile logic)
 
 with tabs[7]:
     st.header("Tied Matchups")
-    # ... (ties display logic) ...
+    # ... (ties logic)
 
 with tabs[8]:
     st.header("League History Trivia")
-    # ... (full, correct trivia logic) ...
-
-# (This is a simplified representation of the full file restore)
+    # ... (trivia logic)
