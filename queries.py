@@ -470,7 +470,10 @@ def get_league_awards(year_to_filter):
     standings_df['win_pct'] = standings_df['w'] / (standings_df['w'] + standings_df['l'] + standings_df['t'])
     standings_df = standings_df.sort_values(['win_pct', 'pf'], ascending=[False, False]).reset_index().rename(columns={'index': 'team_id'})
     standings_df['seed'] = standings_df.index + 1
-    playoff_teams = matchups_year[matchups_year['is_playoff'] == 1]['home_team_id'].unique()
+    
+    playoff_games = matchups_year[(matchups_year['is_playoff'] == 1) & (matchups_year['matchup_type'] == 'WINNERS_BRACKET')]
+    playoff_teams = pd.concat([playoff_games['home_team_id'], playoff_games['away_team_id']]).unique()
+    
     playoff_standings = standings_df[standings_df['team_id'].isin(playoff_teams)]
     underdog_award = {}
     if not playoff_standings.empty:
