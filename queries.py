@@ -159,6 +159,13 @@ def get_all_owners():
     conn.close()
     return owners['owner'].tolist()
 
+def get_all_years():
+    conn = get_db_connection()
+    if not conn: return []
+    years = pd.read_sql_query("SELECT DISTINCT year FROM seasons ORDER BY year DESC", conn)
+    conn.close()
+    return years['year'].tolist()
+
 def get_head_to_head(owner1, owner2):
     conn = get_db_connection()
     if not conn: return pd.DataFrame()
@@ -396,4 +403,85 @@ def get_league_records():
         }
     }
     return records
+
+def get_league_awards(year_to_filter):
+    conn = get_db_connection()
+    if not conn: return {}
+    
+    matchups_df = pd.read_sql_query("SELECT * FROM matchups", conn)
+    teams_df = pd.read_sql_query("SELECT * FROM teams", conn)
+    conn.close()
+
+    matchups_year = matchups_df[matchups_df['year'] == year_to_filter]
+    if matchups_year.empty: return {}
+    teams_year = teams_df[teams_df['year'] == year_to_filter]
+
+    reg_season_games = matchups_year[matchups_year['is_playoff'] == 0]
+    if reg_season_games.empty: return {}
+
+    # Award 1: Top Gun
+    home_pts = reg_season_games[['home_team_id', 'home_score']].rename(columns={'home_team_id': 'team_id', 'home_score': 'score'})
+    away_pts = reg_season_games[['away_team_id', 'away_score']].rename(columns={'away_team_id': 'team_id', 'away_score': 'score'})
+    total_points = pd.concat([home_pts, away_pts]).groupby('team_id')['score'].sum().reset_index()
+    top_gun_id = total_points.loc[total_points['score'].idxmax()]
+    top_gun_team_info = teams_year[teams_year['team_id'] == top_gun_id['team_id']].iloc[0]
+    top_gun_award = {"Manager": top_gun_team_info['owner'], "Team": top_gun_team_info['team_name'], "Total Points": f"{top_gun_id['score']:.2f}"}
+
+    # Award 2: Heartbreak Kid
+    heartbreak_awards = []
+    for week in reg_season_games['week'].unique():
+        weekly_games = reg_season_games[reg_season_games['week'] == week]
+        home_scores = weekly_games[['home_team_id', 'home_score']].rename(columns={'home_team_id': 'team_id', 'home_score': 'score'})
+        away_scores = weekly_games[['away_team_id', 'away_score']].rename(columns={'away_team_id': 'team_id', 'away_score': 'score'})
+        weekly_all_scores = pd.concat([home_scores, away_scores]).sort_values('score', ascending=False).reset_index(drop=True)
+        for i in [1, 2]:
+            if i < len(weekly_all_scores):
+                team_id = weekly_all_scores.iloc[i]['team_id']
+                team_score = weekly_all_scores.iloc[i]['score']
+                match = weekly_games[(weekly_games['home_team_id'] == team_id) | (weekly_games['away_team_id'] == team_id)].iloc[0]
+                is_loss = (match['home_team_id'] == team_id and match['home_score'] < match['away_score']) or \
+                          (match['away_team_id'] == team_id and match['away_score'] < match['home_score'])
+                if is_loss:
+                    team_info = teams_year[teams_year['team_id'] == team_id].iloc[0]
+                    heartbreak_awards.append({"Manager": team_info['owner'], "Team": team_info['team_name'], "Week": int(week), "Score": f"{team_score:.2f}", "Rank": i + 1})
+
+    # Award 3: Giant Killer
+    wins = reg_season_games[reg_season_games['home_score'] != reg_season_games['away_score']]
+    winners_data = []
+    for _, row in wins.iterrows():
+        if row['home_score'] > row['away_score']: winners_data.append({'team_id': row['home_team_id'], 'score': row['home_score'], 'week': row['week']})
+        else: winners_data.append({'team_id': row['away_team_id'], 'score': row['away_score'], 'week': row['week']})
+    giant_killer_award = {}
+    if winners_data:
+        lowest_win = pd.DataFrame(winners_data).loc[pd.DataFrame(winners_data)['score'].idxmin()]
+        killer_team_info = teams_year[teams_year['team_id'] == lowest_win['team_id']].iloc[0]
+        giant_killer_award = {"Manager": killer_team_info['owner'], "Team": killer_team_info['team_name'], "Week": int(lowest_win['week']), "Winning Score": f"{lowest_win['score']:.2f}"}
+
+    # Award 4: The Underdog
+    standings = {team_id: {'w': 0, 'l': 0, 't': 0, 'pf': 0} for team_id in teams_year['team_id']}
+    for _, game in reg_season_games.iterrows():
+        h_id, a_id, h_s, a_s = game['home_team_id'], game['away_team_id'], game['home_score'], game['away_score']
+        standings[h_id]['pf'] += h_s
+        standings[a_id]['pf'] += a_s
+        if h_s > a_s: standings[h_id]['w'] += 1; standings[a_id]['l'] += 1
+        elif a_s > h_s: standings[a_id]['w'] += 1; standings[h_id]['l'] += 1
+        else: standings[h_id]['t'] += 1; standings[a_id]['t'] += 1
+    standings_df = pd.DataFrame.from_dict(standings, orient='index')
+    standings_df['win_pct'] = standings_df['w'] / (standings_df['w'] + standings_df['l'] + standings_df['t'])
+    standings_df = standings_df.sort_values(['win_pct', 'pf'], ascending=[False, False]).reset_index().rename(columns={'index': 'team_id'})
+    standings_df['seed'] = standings_df.index + 1
+    playoff_teams = matchups_year[matchups_year['is_playoff'] == 1]['home_team_id'].unique()
+    playoff_standings = standings_df[standings_df['team_id'].isin(playoff_teams)]
+    underdog_award = {}
+    if not playoff_standings.empty:
+        underdog_details = playoff_standings.loc[playoff_standings['seed'].idxmax()]
+        underdog_team_info = teams_year[teams_year['team_id'] == underdog_details['team_id']].iloc[0]
+        underdog_award = {"Manager": underdog_team_info['owner'], "Team": underdog_team_info['team_name'], "Seed": int(underdog_details['seed'])}
+    
+    return {
+        "Top Gun": top_gun_award,
+        "Heartbreak Kid": heartbreak_awards,
+        "Giant Killer": giant_killer_award,
+        "The Underdog": underdog_award
+    }
 

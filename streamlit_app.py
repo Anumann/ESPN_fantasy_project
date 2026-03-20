@@ -80,11 +80,15 @@ def get_all_ties_cached():
 def get_league_records_cached():
     return queries.get_league_records()
 
+@st.cache_data
+def get_league_awards_cached(year):
+    return queries.get_league_awards(year)
+
 # =================================================================================================
 # Navigation Tabs
 # =================================================================================================
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "🏆 Champions", "📜 League Records", "📊 All-Time Records", "⚔️ Head-to-Head",
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    "🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Head-to-Head",
     "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties"
 ])
 
@@ -139,9 +143,58 @@ with tab2:
             st.caption(f"{records['Closest Shave']['Matchup']} ({records['Closest Shave']['Year']}, Week {records['Closest Shave']['Week']})")
 
 # =================================================================================================
-# Tab 3: All-Time Records
+# Tab 3: League Awards
 # =================================================================================================
 with tab3:
+    st.header("Seasonal League Awards")
+    
+    all_years = queries.get_all_years()
+    selected_year = st.selectbox("Select a Season", options=all_years, key='awards_year_selector')
+
+    if selected_year:
+        awards = get_league_awards_cached(selected_year)
+        
+        if not awards or not any(awards.values()):
+            st.warning(f"Could not retrieve or calculate awards for {selected_year}.")
+        else:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("🏆 Top Gun (MVP)")
+                top_gun = awards.get("Top Gun", {})
+                if top_gun:
+                    st.metric(label=f"{top_gun['Manager']} ({top_gun['Team']})", value=top_gun['Total Points'], help="Highest total points in the regular season.")
+                else:
+                    st.info("Award not calculated.")
+
+                st.subheader("🔪 Giant Killer")
+                giant_killer = awards.get("Giant Killer", {})
+                if giant_killer:
+                    st.metric(label=f"{giant_killer['Manager']} ({giant_killer['Team']})", value=giant_killer['Winning Score'], help=f"Lowest score to win a matchup (Week {giant_killer['Week']}).")
+                else:
+                    st.info("Award not calculated.")
+
+            with col2:
+                st.subheader("🐶 The Underdog")
+                underdog = awards.get("The Underdog", {})
+                if underdog:
+                     st.metric(label=f"{underdog['Manager']} ({underdog['Team']})", value=f"#{underdog['Seed']} Seed", help="Lowest seeded team to make the playoffs.")
+                else:
+                    st.info("Award not calculated.")
+
+                st.subheader("💔 Heartbreak Kid")
+                heartbreaks = awards.get("Heartbreak Kid", [])
+                if heartbreaks:
+                    for hb in heartbreaks:
+                        st.markdown(f"**{hb['Manager']} ({hb['Team']})**")
+                        st.caption(f"Week {hb['Week']} - Scored {hb['Score']} and lost (Top 3 score).")
+                else:
+                    st.info("No heartbreaking losses found for this season.")
+
+# =================================================================================================
+# Tab 4: All-Time Records
+# =================================================================================================
+with tab4:
     st.header("All-Time Records")
     
     st.subheader("Regular Season")
@@ -165,17 +218,17 @@ with tab3:
         )
 
 # =================================================================================================
-# Tab 4: Head-to-Head
+# Tab 5: Head-to-Head
 # =================================================================================================
-with tab4:
+with tab5:
     st.header("Head-to-Head Analysis")
     owners = sorted(get_all_owners_cached())
     
     col1, col2 = st.columns(2)
     with col1:
-        owner1 = st.selectbox("Select Owner 1", options=owners, index=None, placeholder="Choose an owner")
+        owner1 = st.selectbox("Select Owner 1", options=owners, index=None, placeholder="Choose an owner", key='h2h_owner1')
     with col2:
-        owner2 = st.selectbox("Select Owner 2", options=owners, index=None, placeholder="Choose an owner")
+        owner2 = st.selectbox("Select Owner 2", options=owners, index=None, placeholder="Choose an owner", key='h2h_owner2')
 
     if owner1 and owner2:
         if owner1 == owner2:
@@ -203,9 +256,9 @@ with tab4:
                 )
 
 # =================================================================================================
-# Tab 5: Luck Metrics
+# Tab 6: Luck Metrics
 # =================================================================================================
-with tab5:
+with tab6:
     st.header("Luck Metrics")
     st.info("Luck Diff = (Real Win % - All-Play Win %). A negative score means bad luck.")
     
@@ -240,12 +293,12 @@ with tab5:
             )
 
 # =================================================================================================
-# Tab 6: Manager Profiles
+# Tab 7: Manager Profiles
 # =================================================================================================
-with tab6:
+with tab7:
     st.header("Manager Profile")
     owners = sorted(get_all_owners_cached())
-    selected_owner = st.selectbox("Select a Manager", options=owners, index=None, placeholder="Choose a manager")
+    selected_owner = st.selectbox("Select a Manager", options=owners, index=None, placeholder="Choose a manager", key='manager_select')
 
     if selected_owner:
         profile_data = get_owner_profile_cached(selected_owner)
@@ -284,9 +337,9 @@ with tab6:
                 )
 
 # =================================================================================================
-# Tab 7: Ties
+# Tab 8: Ties
 # =================================================================================================
-with tab7:
+with tab8:
     st.header("Tied Matchups")
     ties_df = get_all_ties_cached()
     if not ties_df.empty:
