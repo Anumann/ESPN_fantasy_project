@@ -307,6 +307,7 @@ def get_all_ties():
     query = """
         SELECT
             m.year,
+            m.week,
             t1.owner AS manager_1,
             t2.owner AS manager_2,
             m.home_score AS score
@@ -314,7 +315,7 @@ def get_all_ties():
         JOIN teams t1 ON m.home_team_id = t1.team_id AND m.year = t1.year
         JOIN teams t2 ON m.away_team_id = t2.team_id AND m.year = t2.year
         WHERE m.home_score = m.away_score
-        ORDER BY m.year;
+        ORDER BY m.year, m.week;
     """
     df = pd.read_sql_query(query, conn)
     conn.close()
