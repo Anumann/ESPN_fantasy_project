@@ -351,8 +351,8 @@ with tab7:
             flame_accent = alt.Chart(chart_df).mark_text(
                 align='center',
                 baseline='middle',
-                fontSize=18,
-                dy=-10  # Adjust vertical position to be just above the bar
+                fontSize=24,
+                dy=-15  # Adjust vertical position to be just above the bar
             ).encode(
                 x=alt.X('year:N', sort=None),
                 y='points:Q',
@@ -367,10 +367,9 @@ with tab7:
             st.altair_chart(final_points_chart, use_container_width=True)
             
             # Line Chart for Rank
-            max_rank = season_log['rank'].max()
             rank_chart = alt.Chart(chart_df).mark_line(point=True).encode(
                 x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
-                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True, domain=[max_rank + 1, 1])),
+                y=alt.Y('rank', title='Regular Season Rank', scale=alt.Scale(reverse=True)),
                 tooltip=['year', 'rank', 'record']
             ).properties(
                 title='Rank Per Season'
