@@ -259,7 +259,7 @@ def get_owner_profile(owner_name):
     my_teams = teams_df[teams_df['owner'] == owner_name]
     if my_teams.empty: return None
     season_log = []
-    years = sorted(my_teams['year'].unique(), reverse=True)
+    years = sorted(my_teams['year'].unique())
     total_w = 0; total_l = 0; total_t = 0; total_pts = 0
     
     for year in years:
