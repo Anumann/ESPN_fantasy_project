@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import queries
+import random
 
 # =================================================================================================
 # Page Configuration & Main Title
