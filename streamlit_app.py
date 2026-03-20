@@ -14,13 +14,14 @@ st.title("Fantasy League Legacy Dashboard")
 # =================================================================================================
 COLUMN_NAME_MAP = {
     'year': 'Year', 'team_name': 'Team', 'owner_name': 'Owner', 'record': 'Record',
-    'runner_up': 'Runner-Up', 'score': 'Final Score', 'points_for': 'Points For',
+    'runner_up': 'Runner-Up', 'score': 'Score', 'points_for': 'Points For',
     'games_played': 'Games', 'wins': 'W', 'losses': 'L', 'ties': 'T', 'win_pct': 'Win %',
     'avg_points': 'Avg Pts', 'total_points': 'Total Pts', 'week': 'Week', 'points': 'Points',
     'opponent_points': 'Opp. Points', 'outcome': 'Outcome', 'owner': 'Owner',
     'opponent': 'Opponent', 'opp_score': 'Opp. Score', 'real_record': 'Real Record',
     'real_pct': 'Real %', 'ap_record': 'All-Play Record', 'ap_pct': 'All-Play %',
     'luck_diff': 'Luck Diff', 'team': 'Team', 'total': 'Total Games',
+    'manager_1': 'Manager 1', 'manager_2': 'Manager 2',
 }
 
 def prepare_df_for_display(df):
