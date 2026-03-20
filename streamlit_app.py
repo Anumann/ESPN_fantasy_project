@@ -71,12 +71,16 @@ def get_luck_metrics_cached():
 def get_owner_profile_cached(owner):
     return queries.get_owner_profile(owner)
 
+@st.cache_data
+def get_all_ties_cached():
+    return queries.get_all_ties()
+
 # =================================================================================================
 # Navigation Tabs
 # =================================================================================================
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🏆 Champions", "📊 All-Time Records", "⚔️ Head-to-Head",
-    "🎲 Luck Metrics", "👤 Manager Profiles"
+    "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties"
 ])
 
 # =================================================================================================
@@ -236,3 +240,18 @@ with tab5:
                     column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalries_df.columns},
                     hide_index=True, use_container_width=True
                 )
+
+# =================================================================================================
+# Tab 6: Ties
+# =================================================================================================
+with tab6:
+    st.header("Tied Matchups")
+    ties_df = get_all_ties_cached()
+    if not ties_df.empty:
+        st.dataframe(
+            prepare_df_for_display(ties_df),
+            column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in ties_df.columns},
+            hide_index=True, use_container_width=True
+        )
+    else:
+        st.info("No tied matchups found.")

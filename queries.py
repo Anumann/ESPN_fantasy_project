@@ -300,3 +300,22 @@ def get_owner_profile(owner_name):
     games_played = total_w + total_l + total_t
     win_pct = total_w / games_played if games_played > 0 else 0.0
     return {'career': {'wins': total_w, 'losses': total_l, 'ties': total_t, 'points': total_pts, 'win_pct': win_pct}, 'season_log': pd.DataFrame(season_log), 'rivalries': rivalries_df}
+
+def get_all_ties():
+    conn = get_db_connection()
+    if not conn: return pd.DataFrame()
+    query = """
+        SELECT
+            m.year,
+            t1.owner AS manager_1,
+            t2.owner AS manager_2,
+            m.home_score AS score
+        FROM matchups m
+        JOIN teams t1 ON m.home_team_id = t1.team_id AND m.year = t1.year
+        JOIN teams t2 ON m.away_team_id = t2.team_id AND m.year = t2.year
+        WHERE m.home_score = m.away_score
+        ORDER BY m.year;
+    """
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
