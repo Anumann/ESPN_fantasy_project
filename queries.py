@@ -344,13 +344,13 @@ def get_league_records():
     scores_away = merged[['year', 'week', 'away_owner', 'away_score']].rename(columns={'away_owner': 'owner', 'away_score': 'score'})
     all_scores = pd.concat([scores_home, scores_away]).dropna(subset=['score'])
 
-    # Find records
-    highest_score = all_scores.loc[all_scores['score'].idxmax()]
-    lowest_score = all_scores.loc[all_scores['score'].idxmin()]
-    biggest_blowout = merged.loc[merged['margin'].idxmax()]
-    closest_shave = merged.loc[merged['margin'][merged['margin'] > 0].idxmin()]
-    highest_scoring_matchup = merged.loc[merged['total_score'].idxmax()]
-    lowest_scoring_matchup = merged.loc[merged['total_score'].idxmin()]
+    # Find records robustly by sorting and taking the first row
+    highest_score = all_scores.sort_values('score', ascending=False).iloc[0]
+    lowest_score = all_scores.sort_values('score', ascending=True).iloc[0]
+    biggest_blowout = merged.sort_values('margin', ascending=False).iloc[0]
+    closest_shave = merged[merged['margin'] > 0].sort_values('margin', ascending=True).iloc[0]
+    highest_scoring_matchup = merged.sort_values('total_score', ascending=False).iloc[0]
+    lowest_scoring_matchup = merged.sort_values('total_score', ascending=True).iloc[0]
 
     # Format output
     records = {
