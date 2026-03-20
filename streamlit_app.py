@@ -337,8 +337,8 @@ with tab7:
             chart_df = season_log.copy()
             chart_df['year'] = chart_df['year'].astype(str)
 
-            # Bar Chart for Points
-            points_chart = alt.Chart(chart_df).mark_bar().encode(
+            # Bar Chart for Points with Flame Accent
+            points_chart_base = alt.Chart(chart_df).mark_bar().encode(
                 x=alt.X('year', title='Year', sort=None, axis=alt.Axis(labelAngle=0)),
                 y=alt.Y('points', title='Total Points For'),
                 color=alt.Color('points', title="Points", scale=alt.Scale(
@@ -346,10 +346,25 @@ with tab7:
                     range=["#4393c3", "#d6604d"] # Blue-to-Red gradient
                 )),
                 tooltip=['year', 'points', 'team']
-            ).properties(
+            )
+
+            flame_accent = alt.Chart(chart_df).mark_text(
+                align='center',
+                baseline='middle',
+                fontSize=18,
+                dy=-10  # Adjust vertical position to be just above the bar
+            ).encode(
+                x=alt.X('year:N', sort=None),
+                y='points:Q',
+                text=alt.value('🔥')
+            ).transform_filter(
+                'datum.points > 2000'
+            )
+
+            final_points_chart = (points_chart_base + flame_accent).properties(
                 title='Points Per Season'
             )
-            st.altair_chart(points_chart, use_container_width=True)
+            st.altair_chart(final_points_chart, use_container_width=True)
             
             # Line Chart for Rank
             max_rank = season_log['rank'].max()
