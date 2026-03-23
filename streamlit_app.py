@@ -98,7 +98,7 @@ def setup_new_question(category):
 # =================================================================================================
 # Main App Layout
 # =================================================================================================
-tabs = st.tabs(["🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Rivalries", "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties", "🧠 Trivia", "📈 Rivalries (Improved)"])
+tabs = st.tabs(["🏆 Champions", "📜 League Records", "🥇 League Awards", "📊 All-Time Records", "⚔️ Rivalries", "🎲 Luck Metrics", "👤 Manager Profiles", "🤝 Ties", "🧠 Trivia"])
 
 with tabs[0]:
     st.header("League Champions")
@@ -178,13 +178,70 @@ with tabs[3]:
         st.dataframe(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in playoffs_df.columns}, hide_index=True, width='stretch')
 
 with tabs[4]:
-    st.header("Rivalry Matrix")
-    owners = sorted(get_all_owners_cached())
-    selected_owner = st.selectbox("Select a Manager:", options=owners, index=None, placeholder="Choose a manager", key='rivalry_owner_select')
-    if selected_owner:
-        rivalry_df = get_rivalry_matrix_cached(selected_owner)
-        if rivalry_df.empty: st.info(f"No match history found for {selected_owner}.")
-        else: st.dataframe(prepare_df_for_display(rivalry_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalry_df.columns}, hide_index=True, width='stretch')
+    st.header("Interactive Rivalry Matrix")
+    st.info("Select two managers to visualize their head-to-head history.")
+    owners_list = sorted(get_all_owners_cached())
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        owner_a = st.selectbox("Manager A:", options=owners_list, index=None, placeholder="Select first manager", key='rivalry_improved_owner1')
+    
+    with col2:
+        if owner_a:
+            opponents = [o for o in owners_list if o != owner_a]
+            owner_b = st.selectbox("Manager B:", options=opponents, index=None, placeholder="Select opponent", key='rivalry_improved_owner2')
+        else:
+            owner_b = st.selectbox("Manager B:", options=[], index=None, placeholder="Select Manager A first", disabled=True, key='rivalry_improved_owner2_disabled')
+
+    if owner_a and owner_b:
+        h2h_df = get_head_to_head_cached(owner_a, owner_b)
+        if h2h_df.empty:
+            st.warning(f"{owner_a} and {owner_b} have never played against each other.")
+        else:
+            chart_df = h2h_df.copy()
+            # Sort chronologically (oldest to newest)
+            chart_df = chart_df.sort_values(['year', 'week'], ascending=True)
+            chart_df['differential'] = chart_df['points'] - chart_df['opponent_points']
+            chart_df['matchup_label'] = chart_df['year'].astype(str) + " Wk " + chart_df['week'].astype(str)
+            
+            # Dynamic diverging color scale based on max differential
+            max_diff = float(chart_df['differential'].abs().max())
+            if max_diff == 0: max_diff = 1.0 # Prevent scale issues if all ties
+            
+            color_scale = alt.Scale(
+                domain=[-max_diff, 0, max_diff],
+                range=['#d62728', '#e0e0e0', '#2ca02c']  # Red to Gray to Green
+            )
+
+            st.subheader(f"{owner_a} vs {owner_b} Matchup History")
+            
+            bar_chart = alt.Chart(chart_df).mark_bar().encode(
+                x=alt.X('matchup_label:O', sort=None, title='Matchup (Chronological)', axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y('differential:Q', title=f'Point Differential ({owner_a} perspective)'),
+                color=alt.Color('differential:Q', scale=color_scale, legend=alt.Legend(title="Point Differential")),
+                tooltip=[
+                    alt.Tooltip('year', title='Year'),
+                    alt.Tooltip('week', title='Week'),
+                    alt.Tooltip('points', title=f"{owner_a} Points"),
+                    alt.Tooltip('opponent_points', title=f"{owner_b} Points"),
+                    alt.Tooltip('differential', title='Differential', format='+.2f'),
+                    alt.Tooltip('outcome', title='Outcome')
+                ]
+            ).properties(height=400)
+            
+            rule = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='gray', strokeDash=[4,4]).encode(y='y')
+            
+            st.altair_chart(bar_chart + rule, use_container_width=True)
+            
+            wins = len(chart_df[chart_df['outcome'] == 'WIN'])
+            losses = len(chart_df[chart_df['outcome'] == 'LOSS'])
+            ties = len(chart_df[chart_df['outcome'] == 'TIE'])
+            
+            st.markdown(f"**Overall Record for {owner_a} vs {owner_b}:** {wins}-{losses}-{ties}")
+            
+            with st.expander("View Raw Matchup Data"):
+                st.dataframe(prepare_df_for_display(h2h_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_df.columns}, hide_index=True, width='stretch')
+
 
 with tabs[5]:
     st.header("Luck Metrics")
@@ -312,67 +369,3 @@ with tabs[8]:
     else:
         st.info("Click 'New Question' to start playing!")
 
-with tabs[9]:
-    st.header("Interactive Rivalry Matrix")
-    st.info("Select two managers to visualize their head-to-head history.")
-    owners_list = sorted(get_all_owners_cached())
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        owner_a = st.selectbox("Manager A:", options=owners_list, index=None, placeholder="Select first manager", key='rivalry_improved_owner1')
-    
-    with col2:
-        if owner_a:
-            opponents = [o for o in owners_list if o != owner_a]
-            owner_b = st.selectbox("Manager B:", options=opponents, index=None, placeholder="Select opponent", key='rivalry_improved_owner2')
-        else:
-            owner_b = st.selectbox("Manager B:", options=[], index=None, placeholder="Select Manager A first", disabled=True, key='rivalry_improved_owner2_disabled')
-
-    if owner_a and owner_b:
-        h2h_df = get_head_to_head_cached(owner_a, owner_b)
-        if h2h_df.empty:
-            st.warning(f"{owner_a} and {owner_b} have never played against each other.")
-        else:
-            chart_df = h2h_df.copy()
-            # Sort chronologically (oldest to newest)
-            chart_df = chart_df.sort_values(['year', 'week'], ascending=True)
-            chart_df['differential'] = chart_df['points'] - chart_df['opponent_points']
-            chart_df['matchup_label'] = chart_df['year'].astype(str) + " Wk " + chart_df['week'].astype(str)
-            
-            # Dynamic diverging color scale based on max differential
-            max_diff = float(chart_df['differential'].abs().max())
-            if max_diff == 0: max_diff = 1.0 # Prevent scale issues if all ties
-            
-            color_scale = alt.Scale(
-                domain=[-max_diff, 0, max_diff],
-                range=['#d62728', '#e0e0e0', '#2ca02c']  # Red to Gray to Green
-            )
-
-            st.subheader(f"{owner_a} vs {owner_b} Matchup History")
-            
-            bar_chart = alt.Chart(chart_df).mark_bar().encode(
-                x=alt.X('matchup_label:O', sort=None, title='Matchup (Chronological)', axis=alt.Axis(labelAngle=-45)),
-                y=alt.Y('differential:Q', title=f'Point Differential ({owner_a} perspective)'),
-                color=alt.Color('differential:Q', scale=color_scale, legend=alt.Legend(title="Point Differential")),
-                tooltip=[
-                    alt.Tooltip('year', title='Year'),
-                    alt.Tooltip('week', title='Week'),
-                    alt.Tooltip('points', title=f"{owner_a} Points"),
-                    alt.Tooltip('opponent_points', title=f"{owner_b} Points"),
-                    alt.Tooltip('differential', title='Differential', format='+.2f'),
-                    alt.Tooltip('outcome', title='Outcome')
-                ]
-            ).properties(height=400)
-            
-            rule = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='gray', strokeDash=[4,4]).encode(y='y')
-            
-            st.altair_chart(bar_chart + rule, use_container_width=True)
-            
-            wins = len(chart_df[chart_df['outcome'] == 'WIN'])
-            losses = len(chart_df[chart_df['outcome'] == 'LOSS'])
-            ties = len(chart_df[chart_df['outcome'] == 'TIE'])
-            
-            st.markdown(f"**Overall Record for {owner_a} vs {owner_b}:** {wins}-{losses}-{ties}")
-            
-            with st.expander("View Raw Matchup Data"):
-                st.dataframe(prepare_df_for_display(h2h_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_df.columns}, hide_index=True, width='stretch')
