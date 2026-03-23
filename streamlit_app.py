@@ -334,13 +334,18 @@ with tabs[9]:
             st.warning(f"{owner_a} and {owner_b} have never played against each other.")
         else:
             chart_df = h2h_df.copy()
+            # Sort chronologically (oldest to newest)
+            chart_df = chart_df.sort_values(['year', 'week'], ascending=True)
             chart_df['differential'] = chart_df['points'] - chart_df['opponent_points']
             chart_df['matchup_label'] = chart_df['year'].astype(str) + " Wk " + chart_df['week'].astype(str)
             
-            # Use color domain and range for outcome
+            # Dynamic diverging color scale based on max differential
+            max_diff = float(chart_df['differential'].abs().max())
+            if max_diff == 0: max_diff = 1.0 # Prevent scale issues if all ties
+            
             color_scale = alt.Scale(
-                domain=['WIN', 'LOSS', 'TIE'],
-                range=['#2ca02c', '#d62728', '#7f7f7f']
+                domain=[-max_diff, 0, max_diff],
+                range=['#d62728', '#e0e0e0', '#2ca02c']  # Red to Gray to Green
             )
 
             st.subheader(f"{owner_a} vs {owner_b} Matchup History")
@@ -348,7 +353,7 @@ with tabs[9]:
             bar_chart = alt.Chart(chart_df).mark_bar().encode(
                 x=alt.X('matchup_label:O', sort=None, title='Matchup (Chronological)', axis=alt.Axis(labelAngle=-45)),
                 y=alt.Y('differential:Q', title=f'Point Differential ({owner_a} perspective)'),
-                color=alt.Color('outcome:N', scale=color_scale, legend=alt.Legend(title="Outcome")),
+                color=alt.Color('differential:Q', scale=color_scale, legend=alt.Legend(title="Point Differential")),
                 tooltip=[
                     alt.Tooltip('year', title='Year'),
                     alt.Tooltip('week', title='Week'),
