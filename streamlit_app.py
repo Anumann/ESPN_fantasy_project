@@ -124,7 +124,7 @@ with tabs[0]:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        st.dataframe(prepare_df_for_display(champions_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in champions_df.columns}, hide_index=True, width='stretch')
+        st.dataframe(prepare_df_for_display(champions_df), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in champions_df.columns}, hide_index=True, width='stretch')
 
 with tabs[1]:
     st.header("All-Time League Records")
@@ -190,12 +190,12 @@ with tabs[3]:
     st.subheader("Regular Season")
     reg_season_df = get_all_time_standings_cached('Regular Season')
     if not reg_season_df.empty:
-        st.dataframe(prepare_df_for_display(reg_season_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in reg_season_df.columns}, hide_index=True, width='stretch')
+        st.dataframe(prepare_df_for_display(reg_season_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in reg_season_df.columns}, hide_index=True, width='stretch')
     
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
-        st.dataframe(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in playoffs_df.columns}, hide_index=True, width='stretch')
+        st.dataframe(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in playoffs_df.columns}, hide_index=True, width='stretch')
 
 with tabs[4]:
     st.header("Interactive Rivalry Matrix")
@@ -260,7 +260,7 @@ with tabs[4]:
             st.markdown(f"**Overall Record for {owner_a} vs {owner_b}:** {wins}-{losses}-{ties}")
             
             with st.expander("View Raw Matchup Data"):
-                st.dataframe(prepare_df_for_display(h2h_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in h2h_df.columns}, hide_index=True, width='stretch')
+                st.dataframe(prepare_df_for_display(h2h_df), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in h2h_df.columns}, hide_index=True, width='stretch')
 
 
 with tabs[5]:
@@ -270,14 +270,14 @@ with tabs[5]:
     if not metrics: st.warning("Luck metrics could not be calculated.")
     else:
         st.subheader("All-Play vs. Real Records")
-        st.dataframe(prepare_df_for_display(metrics['all_play']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in metrics['all_play'].columns}, hide_index=True, width='stretch')
+        st.dataframe(prepare_df_for_display(metrics['all_play']), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in metrics['all_play'].columns}, hide_index=True, width='stretch')
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
-            st.dataframe(prepare_df_for_display(metrics['heartbreak']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in metrics['heartbreak'].columns}, hide_index=True, width='stretch')
+            st.dataframe(prepare_df_for_display(metrics['heartbreak']), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in metrics['heartbreak'].columns}, hide_index=True, width='stretch')
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
-            st.dataframe(prepare_df_for_display(metrics['lucky_duck']), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in metrics['lucky_duck'].columns}, hide_index=True, width='stretch')
+            st.dataframe(prepare_df_for_display(metrics['lucky_duck']), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in metrics['lucky_duck'].columns}, hide_index=True, width='stretch')
 
 with tabs[6]:
     st.header("Manager Profile")
@@ -303,10 +303,10 @@ with tabs[6]:
             with scol1:
                 st.subheader("Season History")
                 df_log = season_log[['year', 'team', 'record', 'points']]
-                st.dataframe(prepare_df_for_display(df_log), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in df_log.columns}, hide_index=True, width='stretch')
+                st.dataframe(prepare_df_for_display(df_log), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in df_log.columns}, hide_index=True, width='stretch')
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
-                st.dataframe(prepare_df_for_display(rivalries_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in rivalries_df.columns}, hide_index=True, width='stretch')
+                st.dataframe(prepare_df_for_display(rivalries_df), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in rivalries_df.columns}, hide_index=True, width='stretch')
 
             st.subheader("Performance Charts")
             all_points_df = get_all_season_point_totals_cached()
@@ -348,7 +348,7 @@ with tabs[7]:
     st.header("Tied Matchups")
     ties_df = get_all_ties_cached()
     if not ties_df.empty:
-        st.dataframe(prepare_df_for_display(ties_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in ties_df.columns}, hide_index=True, width='stretch')
+        st.dataframe(prepare_df_for_display(ties_df), column_config={col: st.column_config.Column(label=COLUMN_NAME_MAP.get(col, col), alignment="center") for col in ties_df.columns}, hide_index=True, width='stretch')
     else:
         st.info("No tied matchups found.")
 
