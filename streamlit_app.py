@@ -73,16 +73,15 @@ def prepare_df_for_display(df):
         
     df_copy = df_copy.rename(columns=COLUMN_NAME_MAP)
     
-    # We use pure Pandas Styler to center and hide index
+    # Option C: Set the first column as the index
+    if len(df_copy.columns) > 0:
+        first_col = df_copy.columns[0]
+        df_copy.set_index(first_col, inplace=True)
+    
+    # Center text in HTML fallback
     styler = df_copy.style.set_properties(**{'text-align': 'center'})
     styler = styler.set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
     
-    # Try the modern hide(axis="index"), fallback to older hide_index() if running an old pandas version
-    try:
-        styler = styler.hide(axis="index")
-    except AttributeError:
-        styler = styler.hide_index()
-        
     return styler
 
 # =================================================================================================
