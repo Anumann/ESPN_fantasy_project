@@ -15,13 +15,13 @@ st.title("Fantasy League Legacy Dashboard")
 # =================================================================================================
 center_style = """
 <style>
-    /* Force centering on all table headers and cells */
-    div[data-testid="stDataFrame"] div[data-testid="stTable"] th {
+    .stDataFrame [data-testid="stDataFrameData-row"] > div {
+        text-align: center;
+    }
+    .stDataFrame [data-testid="stDataFrameData-row"] > div[data-field="Number"] {
         text-align: center !important;
     }
-    div[data-testid="stDataFrame"] div[data-testid="stTable"] td {
-        text-align: center !important;
-    }
+    /* Adding generic pandas styler fallbacks just in case */
     .dataframe th, .dataframe td {
         text-align: center !important;
     }
@@ -69,11 +69,7 @@ def prepare_df_for_display(df):
     # Rename columns here so we don't need column_config later
     df_copy = df_copy.rename(columns=COLUMN_NAME_MAP)
         
-    # Return a Pandas Styler object with forced center alignment for headers and cells
-    styler = df_copy.style.set_properties(**{'text-align': 'center'})
-    styler = styler.set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
-    styler = styler.hide(axis="index")
-    return styler
+    return df_copy
 
 # =================================================================================================
 # Data Fetching Functions
@@ -132,7 +128,7 @@ with tabs[0]:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        st.table(prepare_df_for_display(champions_df))
+        st.dataframe(prepare_df_for_display(champions_df), hide_index=True, use_container_width=True)
 
 with tabs[1]:
     st.header("All-Time League Records")
@@ -198,12 +194,12 @@ with tabs[3]:
     st.subheader("Regular Season")
     reg_season_df = get_all_time_standings_cached('Regular Season')
     if not reg_season_df.empty:
-        st.table(prepare_df_for_display(reg_season_df.drop(columns=['owner_id'], errors='ignore')))
+        st.dataframe(prepare_df_for_display(reg_season_df.drop(columns=['owner_id'], errors='ignore')), hide_index=True, use_container_width=True)
     
     st.subheader("Playoffs")
     playoffs_df = get_all_time_standings_cached('Playoffs')
     if not playoffs_df.empty:
-        st.table(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')))
+        st.dataframe(prepare_df_for_display(playoffs_df.drop(columns=['owner_id'], errors='ignore')), hide_index=True, use_container_width=True)
 
 with tabs[4]:
     st.header("Interactive Rivalry Matrix")
@@ -268,7 +264,7 @@ with tabs[4]:
             st.markdown(f"**Overall Record for {owner_a} vs {owner_b}:** {wins}-{losses}-{ties}")
             
             with st.expander("View Raw Matchup Data"):
-                st.table(prepare_df_for_display(h2h_df))
+                st.dataframe(prepare_df_for_display(h2h_df), hide_index=True, use_container_width=True)
 
 
 with tabs[5]:
@@ -278,14 +274,14 @@ with tabs[5]:
     if not metrics: st.warning("Luck metrics could not be calculated.")
     else:
         st.subheader("All-Play vs. Real Records")
-        st.table(prepare_df_for_display(metrics['all_play']))
+        st.dataframe(prepare_df_for_display(metrics['all_play']), hide_index=True, use_container_width=True)
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Heartbreak Index (Top Losses)")
-            st.table(prepare_df_for_display(metrics['heartbreak']))
+            st.dataframe(prepare_df_for_display(metrics['heartbreak']), hide_index=True, use_container_width=True)
         with col2:
             st.subheader("Lucky Duck Index (Top Wins)")
-            st.table(prepare_df_for_display(metrics['lucky_duck']))
+            st.dataframe(prepare_df_for_display(metrics['lucky_duck']), hide_index=True, use_container_width=True)
 
 with tabs[6]:
     st.header("Manager Profile")
@@ -311,10 +307,10 @@ with tabs[6]:
             with scol1:
                 st.subheader("Season History")
                 df_log = season_log[['year', 'team', 'record', 'points']]
-                st.table(prepare_df_for_display(df_log))
+                st.dataframe(prepare_df_for_display(df_log), hide_index=True, use_container_width=True)
             with scol2:
                 st.subheader("Rivalry Matrix (Min. 3 Games)")
-                st.table(prepare_df_for_display(rivalries_df))
+                st.dataframe(prepare_df_for_display(rivalries_df), hide_index=True, use_container_width=True)
 
             st.subheader("Performance Charts")
             all_points_df = get_all_season_point_totals_cached()
@@ -356,7 +352,7 @@ with tabs[7]:
     st.header("Tied Matchups")
     ties_df = get_all_ties_cached()
     if not ties_df.empty:
-        st.table(prepare_df_for_display(ties_df))
+        st.dataframe(prepare_df_for_display(ties_df), hide_index=True, use_container_width=True)
     else:
         st.info("No tied matchups found.")
 
