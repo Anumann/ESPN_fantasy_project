@@ -72,6 +72,8 @@ def get_league_awards_cached(year): return queries.get_league_awards(year)
 def get_all_season_point_totals_cached(): return queries.get_all_season_point_totals()
 @st.cache_data
 def get_trivia_categories_cached(): return ["All Categories"] + queries.get_trivia_categories()
+@st.cache_data
+def get_head_to_head_cached(owner1, owner2): return queries.get_head_to_head(owner1, owner2)
 def get_random_trivia_question(category=None): return queries.get_random_trivia_question(category)
 
 # =================================================================================================
