@@ -11,6 +11,26 @@ st.set_page_config(layout="wide", page_title="Fantasy League Legacy")
 st.title("Fantasy League Legacy Dashboard")
 
 # =================================================================================================
+# Custom CSS Injection
+# =================================================================================================
+center_style = """
+<style>
+    /* Force centering on all table headers and cells */
+    div[data-testid="stDataFrame"] div[data-testid="stTable"] th {
+        text-align: center !important;
+    }
+    div[data-testid="stDataFrame"] div[data-testid="stTable"] td {
+        text-align: center !important;
+    }
+    .dataframe th, .dataframe td {
+        text-align: center !important;
+    }
+</style>
+"""
+st.markdown(center_style, unsafe_allow_html=True)
+
+
+# =================================================================================================
 # Session State Initialization
 # =================================================================================================
 if 'current_question' not in st.session_state:
@@ -104,7 +124,7 @@ with tabs[0]:
     st.header("League Champions")
     champions_df = get_champions_cached()
     if not champions_df.empty:
-        st.dataframe(prepare_df_for_display(champions_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col)} for col in champions_df.columns}, hide_index=True, width='stretch')
+        st.dataframe(prepare_df_for_display(champions_df), column_config={col: {"label": COLUMN_NAME_MAP.get(col, col), "alignment": "center"} for col in champions_df.columns}, hide_index=True, width='stretch')
 
 with tabs[1]:
     st.header("All-Time League Records")
