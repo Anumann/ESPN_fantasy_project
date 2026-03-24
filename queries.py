@@ -645,15 +645,43 @@ def get_granular_records():
     ORDER BY ps.total_points DESC LIMIT 10
     """
     
-    q_acq = query_base + """
+    q_acq = query_base + """,
+    first_rostered_week AS (
+        SELECT 
+            ps.year,
+            ps.team_id,
+            ps.player_id,
+            MIN(wr.week) as min_week
+        FROM player_season_stats ps
+        JOIN weekly_rosters wr 
+            ON ps.year = wr.year AND ps.team_id = wr.team_id AND ps.player_id = wr.player_id
+        GROUP BY ps.year, ps.team_id, ps.player_id
+    ),
+    previous_week_roster AS (
+        SELECT 
+            frw.year,
+            frw.team_id as current_team_id,
+            frw.player_id,
+            prev_t.owner as prev_owner
+        FROM first_rostered_week frw
+        LEFT JOIN weekly_rosters prev_wr
+            ON frw.year = prev_wr.year 
+            AND prev_wr.week = frw.min_week - 1
+            AND frw.player_id = prev_wr.player_id
+        LEFT JOIN teams prev_t 
+            ON prev_wr.team_id = prev_t.team_id AND prev_wr.year = prev_t.year
+    )
     SELECT 
         ps.name as 'Player', 
         ps.default_position as 'Position',
         ps.owner as 'Manager', 
+        COALESCE(pwr.prev_owner, 'Free Agency') as 'Acquired From',
         ps.year as 'Year', 
         ps.total_points as 'Points'
     FROM player_season_stats ps
     LEFT JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
+    JOIN previous_week_roster pwr 
+        ON ps.year = pwr.year AND ps.team_id = pwr.current_team_id AND ps.player_id = pwr.player_id
     WHERE dp.pick_id IS NULL
     ORDER BY ps.total_points DESC LIMIT 10
     """
