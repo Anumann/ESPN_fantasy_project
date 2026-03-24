@@ -62,9 +62,10 @@ def prepare_df_for_display(df):
         def safe_format(val, col_name):
             if pd.isnull(val): return ""
             try:
-                if col_name in ['win_pct', 'real_pct', 'ap_pct']: return f"{float(val):.3f}"
-                elif col_name == 'luck_diff': return f"{float(val):+.3f}"
-                elif col_name in ['avg_points', 'total_points', 'points', 'opponent_points', 'score', 'opp_score', 'points_for']: return f"{float(val):.2f}"
+                col_lower = str(col_name).lower()
+                if col_lower in ['win_pct', 'real_pct', 'ap_pct']: return f"{float(val):.3f}"
+                elif col_lower == 'luck_diff': return f"{float(val):+.3f}"
+                elif col_lower in ['avg_points', 'total_points', 'points', 'opponent_points', 'score', 'opp_score', 'points_for']: return f"{float(val):.2f}"
                 return str(val)
             except (ValueError, TypeError): return str(val)
         df_copy[col] = df_copy[col].apply(lambda x: safe_format(x, col))
