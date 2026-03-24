@@ -583,3 +583,91 @@ def get_random_trivia_question(category=None):
     }
 
 
+
+def get_granular_records():
+    """Returns granular records like highest scoring positional players and best late draft picks."""
+    conn = get_db_connection()
+    if not conn: return {}
+    
+    query_base = """
+    WITH player_season_stats AS (
+        SELECT 
+            wr.year,
+            wr.team_id,
+            t.owner,
+            wr.player_id,
+            p.name,
+            p.default_position,
+            SUM(wr.actual_points) as total_points
+        FROM weekly_rosters wr
+        JOIN players p ON wr.player_id = p.player_id
+        JOIN teams t ON wr.team_id = t.team_id AND wr.year = t.year
+        WHERE wr.lineup_slot NOT IN ('BE', 'IR')
+        GROUP BY wr.year, wr.team_id, wr.player_id
+    )
+    """
+
+    q_pos = query_base + """
+    SELECT 
+        default_position as 'Position', 
+        name as 'Player', 
+        owner as 'Manager', 
+        year as 'Year', 
+        total_points as 'Points'
+    FROM (
+        SELECT *, ROW_NUMBER() OVER(PARTITION BY default_position ORDER BY total_points DESC) as rn
+        FROM player_season_stats
+        WHERE default_position IN ('QB', 'RB', 'WR', 'TE', 'K', 'D/ST')
+    ) WHERE rn = 1
+    ORDER BY 
+        CASE default_position 
+            WHEN 'QB' THEN 1 
+            WHEN 'RB' THEN 2 
+            WHEN 'WR' THEN 3 
+            WHEN 'TE' THEN 4 
+            WHEN 'K' THEN 5 
+            WHEN 'D/ST' THEN 6 
+            ELSE 7 
+        END
+    """
+    
+    q_draft = query_base + """
+    SELECT 
+        ps.name as 'Player',
+        ps.default_position as 'Position',
+        ps.owner as 'Manager', 
+        ps.year as 'Year', 
+        dp.round_num as 'Round', 
+        ps.total_points as 'Points'
+    FROM player_season_stats ps
+    JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
+    WHERE dp.round_num >= 10
+    ORDER BY ps.total_points DESC LIMIT 10
+    """
+    
+    q_acq = query_base + """
+    SELECT 
+        ps.name as 'Player', 
+        ps.default_position as 'Position',
+        ps.owner as 'Manager', 
+        ps.year as 'Year', 
+        ps.total_points as 'Points'
+    FROM player_season_stats ps
+    LEFT JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
+    WHERE dp.pick_id IS NULL
+    ORDER BY ps.total_points DESC LIMIT 10
+    """
+
+    try:
+        import pandas as pd
+        res = {
+            'position': pd.read_sql_query(q_pos, conn),
+            'draft': pd.read_sql_query(q_draft, conn),
+            'acquisitions': pd.read_sql_query(q_acq, conn)
+        }
+    except Exception as e:
+        print(f"Error fetching granular records: {e}")
+        res = {}
+        
+    conn.close()
+    return res

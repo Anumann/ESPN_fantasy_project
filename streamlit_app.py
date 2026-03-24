@@ -110,6 +110,8 @@ def get_league_records_cached(): return queries.get_league_records()
 @st.cache_data
 def get_league_awards_cached(year): return queries.get_league_awards(year)
 @st.cache_data
+def get_granular_records_cached(): return queries.get_granular_records()
+@st.cache_data
 def get_all_season_point_totals_cached(): return queries.get_all_season_point_totals()
 @st.cache_data
 def get_trivia_categories_cached(): return ["All Categories"] + queries.get_trivia_categories()
@@ -170,6 +172,28 @@ with tabs[1]:
             st.caption(f"{records['Biggest Blowout']['Matchup']} ({records['Biggest Blowout']['Year']}, Week {records['Biggest Blowout']['Week']})")
             st.markdown(f"**Closest Shave:** `{records['Closest Shave']['Margin']}`")
             st.caption(f"{records['Closest Shave']['Matchup']} ({records['Closest Shave']['Year']}, Week {records['Closest Shave']['Week']})")
+
+    st.divider()
+    
+    granular_records = get_granular_records_cached()
+    if granular_records and not granular_records['position'].empty:
+        st.header("Player Scoring Records")
+        
+        st.subheader("Highest Scoring Seasons by Position")
+        st.info("The most total points scored by a player in a single season (excluding bench/IR points).")
+        st.table(prepare_df_for_display(granular_records['position']))
+        
+        col_draft, col_acq = st.columns(2)
+        
+        with col_draft:
+            st.subheader("Biggest Late-Draft Steals")
+            st.info("Highest scoring players drafted in Round 10 or later.")
+            st.table(prepare_df_for_display(granular_records['draft']))
+            
+        with col_acq:
+            st.subheader("Best Waiver/Trade Acquisitions")
+            st.info("Highest scoring players who were not drafted by the manager that started them.")
+            st.table(prepare_df_for_display(granular_records['acquisitions']))
 
 with tabs[2]:
     st.header("Seasonal League Awards")
