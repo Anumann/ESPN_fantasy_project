@@ -210,17 +210,17 @@ with tabs[2]:
                 st.subheader("🏆 Top Gun (MVP)")
                 top_gun = awards.get("Top Gun", {})
                 if top_gun: st.metric(label=f"{top_gun['Manager']} ({top_gun['Team']})", value=top_gun['Total Points'], help="Highest total points in the regular season.")
-                else: st.info("Award not calculated.")
+                else: st.info("Data not currently available." if selected_year == 2025 else "Award not calculated.")
 
                 st.subheader("🔪 Boston Scott Giant Killer Award")
                 giant_killer = awards.get("Giant Killer", {})
                 if giant_killer: st.metric(label=f"{giant_killer['Manager']} ({giant_killer['Team']})", value=giant_killer['Winning Score'], help=f"Lowest score to win a matchup (Week {giant_killer['Week']}).")
-                else: st.info("Award not calculated.")
+                else: st.info("Data not currently available." if selected_year == 2025 else "Award not calculated.")
             with col2:
                 st.subheader("🐶 The Underdog")
                 underdog = awards.get("The Underdog", {})
                 if underdog: st.metric(label=f"{underdog['Manager']} ({underdog['Team']})", value=f"#{underdog['Seed']} Seed", help="Lowest seeded team to make the playoffs.")
-                else: st.info("Award not calculated.")
+                else: st.info("Data not currently available." if selected_year == 2025 else "Award not calculated.")
 
                 st.subheader("💔 Heartbreak Kid")
                 heartbreaks = awards.get("Heartbreak Kid", [])
@@ -237,20 +237,20 @@ with tabs[2]:
                 bench = awards.get("Golden Bench", {})
                 if bench: 
                     st.metric(label=f"{bench['Manager']}", value=bench['Bench Points'], help="Most total points left on the bench.")
-                else: st.info("Award not calculated.")
+                else: st.info("Data not currently available." if selected_year == 2025 else "Award not calculated.")
                 
                 st.subheader("💰 Free Agent of the Year")
                 pickup = awards.get("Pickup of the Year", {})
                 if pickup: 
                     st.metric(label=f"{pickup['Player']} ({pickup['Manager']})", value=pickup['Points'], help="Highest scoring free agent/trade acquisition.")
-                else: st.info("Award not calculated.")
+                else: st.info("Data not currently available." if selected_year == 2025 else "Award not calculated.")
 
             with col4:
                 st.subheader("💎 Draft Steal of the Year")
                 steal = awards.get("Draft Steal", {})
                 if steal: 
                     st.metric(label=f"{steal['Player']} ({steal['Manager']})", value=steal['Points'], help=f"Drafted in Round {steal.get('Round', '?')}.")
-                else: st.info("Award not calculated.")
+                else: st.info("Data not currently available." if selected_year == 2025 else "Award not calculated.")
 
 with tabs[3]:
     st.header("All-Time Records")
