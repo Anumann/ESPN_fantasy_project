@@ -523,11 +523,72 @@ def get_league_awards(year_to_filter):
         underdog_team_info = teams_year[teams_year['team_id'] == underdog_details['team_id']].iloc[0]
         underdog_award = {"Manager": underdog_team_info['owner'], "Team": underdog_team_info['team_name'], "Seed": int(underdog_details['seed'])}
     
+    # Award 5: Golden Bench (Most Points Left on Bench)
+    golden_bench_award = {}
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT t.owner, t.team_name, SUM(wr.actual_points) as bench_points
+            FROM weekly_rosters wr
+            JOIN teams t ON wr.team_id = t.team_id AND wr.year = t.year
+            WHERE wr.year = ? AND wr.lineup_slot = 'BE'
+            GROUP BY wr.team_id
+            ORDER BY bench_points DESC LIMIT 1
+        ''', (year_to_filter,))
+        res = cursor.fetchone()
+        if res:
+            golden_bench_award = {"Manager": res[0], "Team": res[1], "Bench Points": f"{res[2]:.2f}"}
+            
+        # Award 6: Draft Steal of the Year
+        draft_steal_award = {}
+        cursor.execute('''
+            SELECT p.name, t.owner, dp.round_num, SUM(wr.actual_points) as points
+            FROM weekly_rosters wr
+            JOIN players p ON wr.player_id = p.player_id
+            JOIN teams t ON wr.team_id = t.team_id AND wr.year = t.year
+            JOIN draft_picks dp ON wr.year = dp.year AND wr.team_id = dp.team_id AND wr.player_id = dp.player_id
+            WHERE wr.year = ? AND wr.lineup_slot NOT IN ('BE', 'IR') AND dp.round_num >= 10
+            GROUP BY wr.player_id, wr.team_id
+            ORDER BY points DESC LIMIT 1
+        ''', (year_to_filter,))
+        res2 = cursor.fetchone()
+        if res2:
+            draft_steal_award = {"Player": res2[0], "Manager": res2[1], "Round": res2[2], "Points": f"{res2[3]:.2f}"}
+
+        # Award 7: Pickup of the Year
+        pickup_award = {}
+        cursor.execute('''
+            WITH player_season_stats AS (
+                SELECT wr.year, wr.team_id, wr.player_id, SUM(wr.actual_points) as total_points
+                FROM weekly_rosters wr
+                WHERE wr.year = ? AND wr.lineup_slot NOT IN ('BE', 'IR')
+                GROUP BY wr.team_id, wr.player_id
+            )
+            SELECT p.name, t.owner, ps.total_points
+            FROM player_season_stats ps
+            JOIN players p ON ps.player_id = p.player_id
+            JOIN teams t ON ps.team_id = t.team_id AND ps.year = t.year
+            LEFT JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
+            WHERE dp.pick_id IS NULL
+            ORDER BY ps.total_points DESC LIMIT 1
+        ''', (year_to_filter,))
+        res3 = cursor.fetchone()
+        if res3:
+            pickup_award = {"Player": res3[0], "Manager": res3[1], "Points": f"{res3[2]:.2f}"}
+            
+        conn.close()
+    except Exception as e:
+        print(f"Error fetching granular awards: {e}")
+
     return {
         "Top Gun": top_gun_award,
         "Heartbreak Kid": heartbreak_awards,
         "Giant Killer": giant_killer_award,
-        "The Underdog": underdog_award
+        "The Underdog": underdog_award,
+        "Golden Bench": golden_bench_award,
+        "Draft Steal": draft_steal_award,
+        "Pickup of the Year": pickup_award
     }
 
 def get_all_season_point_totals():

@@ -228,8 +228,29 @@ with tabs[2]:
                     for hb in heartbreaks:
                         st.markdown(f"**{hb['Manager']} ({hb['Team']})**")
                         st.caption(f"Week {hb['Week']} - Scored {hb['Score']} and lost (Top 3 score).")
-                else:
-                    st.info("No heartbreaking losses found for this season.")
+            st.divider()
+            
+            # Granular Awards
+            col3, col4 = st.columns(2)
+            with col3:
+                st.subheader("🪑 The Golden Bench")
+                bench = awards.get("Golden Bench", {})
+                if bench: 
+                    st.metric(label=f"{bench['Manager']}", value=bench['Bench Points'], help="Most total points left on the bench.")
+                else: st.info("Award not calculated.")
+                
+                st.subheader("💰 Free Agent of the Year")
+                pickup = awards.get("Pickup of the Year", {})
+                if pickup: 
+                    st.metric(label=f"{pickup['Player']} ({pickup['Manager']})", value=pickup['Points'], help="Highest scoring free agent/trade acquisition.")
+                else: st.info("Award not calculated.")
+
+            with col4:
+                st.subheader("💎 Draft Steal of the Year")
+                steal = awards.get("Draft Steal", {})
+                if steal: 
+                    st.metric(label=f"{steal['Player']} ({steal['Manager']})", value=steal['Points'], help=f"Drafted in Round {steal.get('Round', '?')}.")
+                else: st.info("Award not calculated.")
 
 with tabs[3]:
     st.header("All-Time Records")
