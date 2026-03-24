@@ -69,19 +69,14 @@ def prepare_df_for_display(df):
     # Rename columns here so we don't need column_config later
     df_copy = df_copy.rename(columns=COLUMN_NAME_MAP)
     
-    # We use pure Pandas Styler to center everything. 
-    # To hide the unwanted numerical index without leaving a blank column, 
-    # we dynamically set the first column as the index (Option C).
-    # To prevent the KeyError ("Styler.apply and .map are not compatible with non-unique index"),
-    # we make the first column's values unique by appending invisible zero-width spaces (\u200b).
-    first_col = df_copy.columns[0]
-    s = df_copy[first_col].astype(str)
-    df_copy[first_col] = s + s.groupby(s).cumcount().map(lambda x: '\u200b' * x)
-    
-    df_copy = df_copy.set_index(first_col)
-    
     styler = df_copy.style.set_properties(**{'text-align': 'center'})
     styler = styler.set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
+    
+    # Try the modern hide(axis="index"), fallback to older hide_index() if running an old pandas version
+    try:
+        styler = styler.hide(axis="index")
+    except AttributeError:
+        styler = styler.hide_index()
         
     return styler
 
