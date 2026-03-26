@@ -374,7 +374,7 @@ def get_league_records():
     conn = get_db_connection()
     if not conn: return {}
     
-    matchups_df = pd.read_sql_query("SELECT * FROM matchups", conn)
+    matchups_df = pd.read_sql_query("SELECT * FROM matchups WHERE is_playoff = 0", conn)
     teams_df = pd.read_sql_query("SELECT * FROM teams", conn)
     conn.close()
 
