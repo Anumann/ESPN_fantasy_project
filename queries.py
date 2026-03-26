@@ -692,18 +692,31 @@ def get_granular_records():
         Points DESC
     """
     
-    q_draft = query_base + """
-    SELECT 
-        ps.name as 'Player',
-        ps.default_position as 'Position',
-        ps.owner as 'Manager', 
-        ps.year as 'Year', 
-        dp.round_num as 'Round', 
-        ps.total_points as 'Points'
-    FROM player_season_stats ps
-    JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
-    WHERE dp.round_num >= 10
-    ORDER BY ps.total_points DESC LIMIT 10
+    q_draft = query_base + """,
+    draft_steals AS (
+        SELECT 
+            ps.name as 'Player',
+            ps.default_position as 'Position',
+            ps.owner as 'Manager', 
+            ps.year as 'Year', 
+            dp.round_num as 'Round', 
+            ps.total_points as 'Points'
+        FROM player_season_stats ps
+        JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
+        WHERE dp.round_num >= 10 AND ps.default_position IN ('QB', 'RB', 'WR', 'TE', 'D/ST')
+    )
+    SELECT * FROM (
+        SELECT * FROM draft_steals ORDER BY Points DESC LIMIT 10
+    )
+    UNION
+    SELECT * FROM (
+        SELECT * FROM draft_steals WHERE Position = 'WR' ORDER BY Points DESC LIMIT 1
+    )
+    UNION
+    SELECT * FROM (
+        SELECT * FROM draft_steals WHERE Position = 'TE' ORDER BY Points DESC LIMIT 1
+    )
+    ORDER BY Points DESC
     """
     
     q_acq = query_base + """,
