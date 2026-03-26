@@ -678,17 +678,16 @@ def get_granular_records():
     FROM (
         SELECT *, ROW_NUMBER() OVER(PARTITION BY default_position ORDER BY total_points DESC) as rn
         FROM player_season_stats
-        WHERE default_position IN ('QB', 'RB', 'WR', 'TE', 'K', 'D/ST')
-    ) WHERE rn <= 10
+        WHERE default_position IN ('QB', 'RB', 'WR', 'TE', 'D/ST')
+    ) WHERE rn <= 3
     ORDER BY 
         CASE default_position 
             WHEN 'QB' THEN 1 
             WHEN 'RB' THEN 2 
             WHEN 'WR' THEN 3 
             WHEN 'TE' THEN 4 
-            WHEN 'K' THEN 5 
-            WHEN 'D/ST' THEN 6 
-            ELSE 7 
+            WHEN 'D/ST' THEN 5 
+            ELSE 6 
         END,
         Points DESC
     """
