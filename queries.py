@@ -744,20 +744,33 @@ def get_granular_records():
             AND frw.player_id = prev_wr.player_id
         LEFT JOIN teams prev_t 
             ON prev_wr.team_id = prev_t.team_id AND prev_wr.year = prev_t.year
+    ),
+    acquisitions AS (
+        SELECT 
+            ps.name as 'Player', 
+            ps.default_position as 'Position',
+            ps.owner as 'Manager', 
+            COALESCE(pwr.prev_owner, 'Free Agency') as 'Acquired From',
+            ps.year as 'Year', 
+            ps.total_points as 'Points'
+        FROM player_season_stats ps
+        LEFT JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
+        JOIN previous_week_roster pwr 
+            ON ps.year = pwr.year AND ps.team_id = pwr.current_team_id AND ps.player_id = pwr.player_id
+        WHERE dp.pick_id IS NULL AND ps.default_position IN ('QB', 'RB', 'WR', 'TE', 'D/ST')
     )
-    SELECT 
-        ps.name as 'Player', 
-        ps.default_position as 'Position',
-        ps.owner as 'Manager', 
-        COALESCE(pwr.prev_owner, 'Free Agency') as 'Acquired From',
-        ps.year as 'Year', 
-        ps.total_points as 'Points'
-    FROM player_season_stats ps
-    LEFT JOIN draft_picks dp ON ps.year = dp.year AND ps.team_id = dp.team_id AND ps.player_id = dp.player_id
-    JOIN previous_week_roster pwr 
-        ON ps.year = pwr.year AND ps.team_id = pwr.current_team_id AND ps.player_id = pwr.player_id
-    WHERE dp.pick_id IS NULL
-    ORDER BY ps.total_points DESC LIMIT 10
+    SELECT * FROM (
+        SELECT * FROM acquisitions ORDER BY Points DESC LIMIT 10
+    )
+    UNION
+    SELECT * FROM (
+        SELECT * FROM acquisitions WHERE Position = 'WR' ORDER BY Points DESC LIMIT 1
+    )
+    UNION
+    SELECT * FROM (
+        SELECT * FROM acquisitions WHERE Position = 'TE' ORDER BY Points DESC LIMIT 1
+    )
+    ORDER BY Points DESC
     """
 
     try:
